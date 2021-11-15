@@ -1,7 +1,12 @@
-section MBR vstart=0x7c00
+section .text
 
-real_mode:
+global _start ; ld use this name as entry point
+extern loader
+
+_start:
 [bits 16]
+    cli ; disable interrupts enabled by BIOS
+
     xor ax,ax
     ; DO NOT try to 'mov cs,ax' as 'mov' instruction cannot change the workflow. 
     ; It is invalid and will cause an invalid opcode exception(#UD).
@@ -30,7 +35,7 @@ real_mode:
     mov cr0,eax
 
     ; use long jump to reload $CS with selector which selects the code segment
-    jmp (1<<3):protected_mode
+    jmp dword (1<<3):protected_mode
 
 protected_mode:
 [bits 32]
@@ -41,7 +46,7 @@ protected_mode:
     mov gs,ax
     mov ss,ax
 
-    jmp $
+    call loader
 
 
 ; Global Descriptor Table, ref to https://wiki.osdev.org/Global_Descriptor_Table
@@ -62,8 +67,3 @@ GDT_BASE:
 GDT_DESC: ; GDT Descriptor will be loaded into GDTR
     dw GDT_DESC-GDT_BASE-1  ; first 2 bytes: GDT_LIMIT = sizeof(GDT) - 1
     dd GDT_BASE             ; next 4 bytes: GDT_BASE_ADDR
-
-
-; valid MBR must be 512 bytes in size and end with magic number
-times 510-($-$$) db 0
-db 0x55,0xaa
