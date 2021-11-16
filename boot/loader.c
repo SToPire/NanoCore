@@ -3,9 +3,8 @@
 void readsectn(void *addr, ushort sect, ushort cnt);
 
 void loader() {
-  //readsectn((void *)0x900, 0, 1);
-  while (1)
-    ;
+  readsectn((void*)0x8000, 1, 1);
+  while(1);
 }
 
 void readsectn(void *addr, ushort sect, ushort cnt) {

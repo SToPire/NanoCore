@@ -1,4 +1,5 @@
 BOOTDIR = boot
+KDIR = kernel
 BUILDDIR = build
 
 # CFLAGS from xv6
@@ -17,6 +18,10 @@ LDFLAGS = -m elf_i386
 
 QEMU = qemu-system-i386 -nographic 
 
+kobj = $(shell find $(KDIR) -name "*.c" \
+| tr -s "\n" " " | sed -r 's/.c/.o/g' \
+| sed -r 's/$(KDIR)/$(BUILDDIR)/g')
+
 all: $(BUILDDIR)/hd.img
 
 $(BUILDDIR)/mbr: $(BOOTDIR)/boot.S $(BOOTDIR)/loader.c
@@ -29,8 +34,15 @@ $(BUILDDIR)/mbr: $(BOOTDIR)/boot.S $(BOOTDIR)/loader.c
 # override shell built-in command 'printf'	
 	/usr/bin/printf '\x55\xAA' >> $(BUILDDIR)/mbr
 
-$(BUILDDIR)/hd.img: $(BUILDDIR)/mbr
+$(BUILDDIR)/kernel: $(kobj)
+	ld $(LDFLAGS) -N -e main -Ttext 0 -o $@ $^
+
+$(BUILDDIR)/%.o : $(KDIR)/%.c
+	gcc $(CFLAGS) $< -c -o $@ 
+
+$(BUILDDIR)/hd.img: $(BUILDDIR)/mbr $(BUILDDIR)/kernel
 	dd if=$(BUILDDIR)/mbr of=$(BUILDDIR)/hd.img bs=512 count=1 conv=notrunc
+	dd if=$(BUILDDIR)/kernel of=$(BUILDDIR)/hd.img bs=512 seek=1 conv=notrunc
 
 qemu: $(BUILDDIR)/hd.img
 	$(QEMU) -drive file=$(BUILDDIR)/hd.img,format=raw
