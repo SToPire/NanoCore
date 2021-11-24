@@ -1,0 +1,2 @@
+#define LOADER_MEMORY_LOCATION 0x8000
+#define LOADER_SECTOR          0x1
