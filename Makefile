@@ -25,7 +25,7 @@ all: $(BUILDDIR)/hd.img
 
 $(BUILDDIR)/mbr: $(BOOTDIR)/mbr.S $(BOOTDIR)/mbr.c
 	mkdir -p $(BUILDDIR)
-	nasm $(ASFLAGS) $(BOOTDIR)/mbr.S -o $(BUILDDIR)/mbr.S.o
+	nasm $(ASFLAGS) -i $(BOOTDIR)/include $(BOOTDIR)/mbr.S -o $(BUILDDIR)/mbr.S.o
 	gcc $(CFLAGS) -O -nostdinc -c $(BOOTDIR)/mbr.c -o $(BUILDDIR)/mbr.c.o 
 	ld $(LDFLAGS) -N -e _start -Ttext 0x7c00 -o $(BUILDDIR)/mbr.o $(BUILDDIR)/mbr.S.o $(BUILDDIR)/mbr.c.o
 	objcopy -S -O binary -j .text $(BUILDDIR)/mbr.o $@
@@ -34,13 +34,13 @@ $(BUILDDIR)/mbr: $(BOOTDIR)/mbr.S $(BOOTDIR)/mbr.c
 	/usr/bin/printf '\x55\xAA' >> $(BUILDDIR)/mbr
 
 $(BUILDDIR)/loader: $(BOOTDIR)/loader.S $(BOOTDIR)/loader.c
-	nasm $(ASFLAGS) $(BOOTDIR)/loader.S -o $(BUILDDIR)/loader.S.o
+	nasm $(ASFLAGS) -i $(BOOTDIR)/include $(BOOTDIR)/loader.S -o $(BUILDDIR)/loader.S.o
 	gcc $(CFLAGS) -O -nostdinc -c $(BOOTDIR)/loader.c -o $(BUILDDIR)/loader.c.o
 	ld $(LDFLAGS) -N -e _start -Ttext 0x8000 -o $(BUILDDIR)/loader.o $(BUILDDIR)/loader.S.o $(BUILDDIR)/loader.c.o
 	objcopy -S -O binary -j .text $(BUILDDIR)/loader.o $@
 
 $(BUILDDIR)/kernel: $(kobj)
-	ld $(LDFLAGS) -N -e main -Ttext 0 -o $@ $^
+	ld $(LDFLAGS) -T $(KDIR)/kernel.ld -N -e main -o $@ $^
 
 $(BUILDDIR)/%.o : $(KDIR)/%.c
 	gcc $(CFLAGS) $< -c -o $@ 

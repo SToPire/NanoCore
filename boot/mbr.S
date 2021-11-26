@@ -1,19 +1,6 @@
-%define FREE_MEM        0x1000
+; Warning: Now MBR is 507 bytes in size, DO NOT ADD ANYTHING!!
 
-%define PAGE_PRESENT    (1 << 0)
-%define PAGE_WRITE      (1 << 1)
-%define PAGE_SIZE       (1 << 7)
-
-%define EFER_REG        0xC0000080
-%define EFER_LME        (1 << 8)
-
-%define CR0_PE          (1 << 0)
-%define CR0_PG          (1 << 31)
-
-%define CR4_PAE         (1 << 5)
-
-%define CODE_SEG        (1 << 3)
-%define DATA_SEG        (2 << 3)
+%include "asm.inc"
 
 section .text
 
@@ -65,19 +52,19 @@ protected_mode:
     mov ss,ax
 
     ; zero 8KiB memory for 2-level page table, using 1GB page
-    mov edi,FREE_MEM
+    mov edi,PML4
     xor eax,eax
     mov ecx,0x800 
     cld
     rep stosd ;0x800 * 4 = 8KiB
-    mov edi,FREE_MEM
+    mov edi,PML4
 
     ; PML4E
     lea eax,[edi+0x1000]
     or eax,PAGE_PRESENT | PAGE_WRITE
     mov [edi],eax
 
-    ; PDPTE, identity mapping of [0, 1GB]
+    ; PDPTE, identity mapping of [0, 1GB], reused in map_kernel.
     xor eax,eax
     or eax,PAGE_PRESENT | PAGE_WRITE | PAGE_SIZE
     mov [edi+0x1000],eax
@@ -88,7 +75,7 @@ protected_mode:
     mov cr4,eax
 
     ; load PML4 base to CR3
-    mov eax,FREE_MEM
+    mov eax,PML4
     mov cr3,eax
 
     ; set IA32_EFER.LME = 1
