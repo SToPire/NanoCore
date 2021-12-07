@@ -3,7 +3,7 @@
 
 int main() {
   init_serial();
-  printk("\nsos booting...\n");
+  printk("\n[INFO] sos booting...\n");
   while (1)
     ;
 }

@@ -1,5 +1,5 @@
 /*
- * This file comes from OSDev Wiki.
+ * This file comes from OSDev Wiki,
  * see https://wiki.osdev.org/Serial_Ports
  */
 #include "include/uart.h"

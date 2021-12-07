@@ -22,7 +22,8 @@ static int vsprintf(char *str, const char *fmt, va_list ap) {
   unsigned u;
   char tmp_num[20];
 
-  bool d_negative_no_zero_padded_flag = false; // negative number with no zero_padded
+  // flag for printing negative number with no zero_padded
+  bool d_negative_no_zero_padded_flag = false;
 
   bool zero_padded = false;
   bool in_format = false;
@@ -140,7 +141,9 @@ static int vsprintf(char *str, const char *fmt, va_list ap) {
       case '7':
       case '8':
       case '9': width_now = 10 * width_now + *fmt - '0'; break;
-      default: /* TODO: err */;
+      default:
+        for (char *s = "Error in printk!\n", *p = s; *p; ++p)
+          write_serial(*p);
       }
       ++fmt;
     } else if (*fmt == '%') {
