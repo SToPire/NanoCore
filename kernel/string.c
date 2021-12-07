@@ -57,7 +57,7 @@ static int vsprintf(char *str, const char *fmt, va_list ap) {
             *outptr++ = '-';
             --width_now;
           } else
-            d_negative_no_zero_padded_flag = 1;
+            d_negative_no_zero_padded_flag = true;
         } else if (d == 0) {
           *outptr++ = '0';
           --width_now;
