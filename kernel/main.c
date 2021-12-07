@@ -1,6 +1,8 @@
-int a[10];
-int b = 1;
+#include "include/uart.h"
+
 int main() {
+  init_serial();
+
   while (1)
     ;
 }
