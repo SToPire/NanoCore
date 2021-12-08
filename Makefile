@@ -23,7 +23,7 @@ all: $(BUILDDIR)/hd.img
 $(BUILDDIR)/mbr: $(BOOTDIR)/mbr.S $(BOOTDIR)/mbr.c
 	mkdir -p $(BUILDDIR)
 	nasm $(ASFLAGS) -i $(BOOTDIR)/include $(BOOTDIR)/mbr.S -o $(BUILDDIR)/mbr.S.o
-	gcc $(CFLAGS) -fno-pie -no-pie -O -nostdinc -c $(BOOTDIR)/mbr.c -o $(BUILDDIR)/mbr.c.o 
+	gcc $(CFLAGS) -fno-pie -no-pie -O -c $(BOOTDIR)/mbr.c -o $(BUILDDIR)/mbr.c.o 
 	ld $(LDFLAGS) -N -e _start -Ttext 0x7c00 -o $(BUILDDIR)/mbr.o $(BUILDDIR)/mbr.S.o $(BUILDDIR)/mbr.c.o
 	objcopy -S -O binary -j .text $(BUILDDIR)/mbr.o $@
 	dd if=/dev/null of=$@ bs=1 seek=510
@@ -32,7 +32,7 @@ $(BUILDDIR)/mbr: $(BOOTDIR)/mbr.S $(BOOTDIR)/mbr.c
 
 $(BUILDDIR)/loader: $(BOOTDIR)/loader.S $(BOOTDIR)/loader.c
 	nasm $(ASFLAGS) -i $(BOOTDIR)/include $(BOOTDIR)/loader.S -o $(BUILDDIR)/loader.S.o
-	gcc $(CFLAGS) -fno-pie -no-pie -O -nostdinc -c $(BOOTDIR)/loader.c -o $(BUILDDIR)/loader.c.o
+	gcc $(CFLAGS) -fno-pie -no-pie -O -c $(BOOTDIR)/loader.c -o $(BUILDDIR)/loader.c.o
 	ld $(LDFLAGS) -N -e _start -Ttext 0x8000 -o $(BUILDDIR)/loader.o $(BUILDDIR)/loader.S.o $(BUILDDIR)/loader.c.o
 	objcopy -S -O binary -j .text $(BUILDDIR)/loader.o $@
 
