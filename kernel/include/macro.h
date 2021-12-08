@@ -12,7 +12,7 @@
 
 /*
  * This file comes from chcore,
- * see https://gitee.com/ipads-lab/chcore-lab/blob/lab1/kernel/common/macro.h
+ * see https://gitee.com/ipads-lab/chcore-lab/
  */
 
 #pragma once

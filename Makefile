@@ -2,21 +2,17 @@ BOOTDIR = boot
 KDIR = kernel
 BUILDDIR = build
 
-CFLAGS = -fPIC -static -fno-builtin -fno-strict-aliasing -O2 -Wall -MD -ggdb -Werror -fno-omit-frame-pointer -ffreestanding -mno-red-zone -mno-mmx -mno-sse -mno-sse2
-CFLAGS += $(shell gcc -fno-stack-protector -E -x c /dev/null >/dev/null 2>&1 && echo -fno-stack-protector)
-BOODLOADER_CFLAGS := $(CFLAGS)
-# Disable PIE when possible (for Ubuntu 16.10 toolchain)
-ifneq ($(shell gcc -dumpspecs 2>/dev/null | grep -e '[^f]no-pie'),)
-BOODLOADER_CFLAGS += -fno-pie -no-pie
-endif
-ifneq ($(shell gcc -dumpspecs 2>/dev/null | grep -e '[^f]nopie'),)
-BOODLOADER_CFLAGS += -fno-pie -nopie
-endif
+CFLAGS = -fPIC -fno-strict-aliasing -O2 -Wall -ggdb -Werror -ffreestanding -nostdinc 
+CFLAGS += -fno-omit-frame-pointer -fno-stack-protector
+CFLAGS += -mno-red-zone -mno-mmx -mno-sse -mno-sse2 
 
 ASFLAGS = -f elf64 -F dwarf -g
 LDFLAGS = -m elf_x86_64
 
-QEMU = qemu-system-x86_64 -nographic 
+# warning=0, info=1, debug=2
+LOG_LEVEL = 1
+
+QEMU = qemu-system-x86_64 -nographic -serial mon:stdio
 
 kobj = $(shell find $(KDIR) -name "*.c" \
 | tr -s "\n" " " | sed -r 's/.c/.o/g' \
@@ -27,7 +23,7 @@ all: $(BUILDDIR)/hd.img
 $(BUILDDIR)/mbr: $(BOOTDIR)/mbr.S $(BOOTDIR)/mbr.c
 	mkdir -p $(BUILDDIR)
 	nasm $(ASFLAGS) -i $(BOOTDIR)/include $(BOOTDIR)/mbr.S -o $(BUILDDIR)/mbr.S.o
-	gcc $(BOODLOADER_CFLAGS) -O -nostdinc -c $(BOOTDIR)/mbr.c -o $(BUILDDIR)/mbr.c.o 
+	gcc $(CFLAGS) -fno-pie -no-pie -O -nostdinc -c $(BOOTDIR)/mbr.c -o $(BUILDDIR)/mbr.c.o 
 	ld $(LDFLAGS) -N -e _start -Ttext 0x7c00 -o $(BUILDDIR)/mbr.o $(BUILDDIR)/mbr.S.o $(BUILDDIR)/mbr.c.o
 	objcopy -S -O binary -j .text $(BUILDDIR)/mbr.o $@
 	dd if=/dev/null of=$@ bs=1 seek=510
@@ -36,7 +32,7 @@ $(BUILDDIR)/mbr: $(BOOTDIR)/mbr.S $(BOOTDIR)/mbr.c
 
 $(BUILDDIR)/loader: $(BOOTDIR)/loader.S $(BOOTDIR)/loader.c
 	nasm $(ASFLAGS) -i $(BOOTDIR)/include $(BOOTDIR)/loader.S -o $(BUILDDIR)/loader.S.o
-	gcc $(BOODLOADER_CFLAGS) -O -nostdinc -c $(BOOTDIR)/loader.c -o $(BUILDDIR)/loader.c.o
+	gcc $(CFLAGS) -fno-pie -no-pie -O -nostdinc -c $(BOOTDIR)/loader.c -o $(BUILDDIR)/loader.c.o
 	ld $(LDFLAGS) -N -e _start -Ttext 0x8000 -o $(BUILDDIR)/loader.o $(BUILDDIR)/loader.S.o $(BUILDDIR)/loader.c.o
 	objcopy -S -O binary -j .text $(BUILDDIR)/loader.o $@
 
@@ -44,7 +40,7 @@ $(BUILDDIR)/kernel: $(kobj)
 	ld $(LDFLAGS) -T $(KDIR)/kernel.ld -N -e main -o $@ $^
 
 $(BUILDDIR)/%.o : $(KDIR)/%.c
-	gcc $(CFLAGS) $< -c -o $@ 
+	gcc -DLOG_LEVEL=$(LOG_LEVEL) $(CFLAGS) $< -c -o $@ 
 
 $(BUILDDIR)/hd.img: $(BUILDDIR)/mbr $(BUILDDIR)/loader $(BUILDDIR)/kernel
 	dd if=$(BUILDDIR)/mbr of=$(BUILDDIR)/hd.img bs=512 count=1 conv=notrunc
