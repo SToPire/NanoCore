@@ -1,22 +1,25 @@
-BOOTDIR = boot
-KDIR = kernel
-BUILDDIR = build
+BOOTDIR = $(shell pwd)/boot
+export KDIR = $(shell pwd)/kernel
+export BUILDDIR = $(shell pwd)/build
 
-CFLAGS = -fPIC -fno-strict-aliasing -O2 -Wall -ggdb -Werror -ffreestanding -nostdinc 
+export CFLAGS = -fPIC -fno-strict-aliasing -O2 -Wall -ggdb -ffreestanding -nostdinc 
 CFLAGS += -fno-omit-frame-pointer -fno-stack-protector
 CFLAGS += -mno-red-zone -mno-mmx -mno-sse -mno-sse2 
+
+# warning=0, info=1, debug=2
+CFLAGS += -DLOG_LEVEL=1
 
 ASFLAGS = -f elf64 -F dwarf -g
 LDFLAGS = -m elf_x86_64
 
-# warning=0, info=1, debug=2
-LOG_LEVEL = 1
-
 QEMU = qemu-system-x86_64 -nographic -serial mon:stdio
 
-kobj = $(shell find $(KDIR) -name "*.c" \
-| tr -s "\n" " " | sed -r 's/.c/.o/g' \
-| sed -r 's/$(KDIR)/$(BUILDDIR)/g')
+KOBJS = $(shell find $(KDIR) -name "*.c" \
+| sed -r 's|$(KDIR).*/|$(BUILDDIR)/|g' \
+| sed -r 's/.c/.o/g' \
+| tr -s "\n" " " )
+
+KSUBDIRS := $(wildcard $(KDIR)/*/.)
 
 all: $(BUILDDIR)/hd.img
 
@@ -36,11 +39,12 @@ $(BUILDDIR)/loader: $(BOOTDIR)/loader.S $(BOOTDIR)/loader.c
 	ld $(LDFLAGS) -N -e _start -Ttext 0x8000 -o $(BUILDDIR)/loader.o $(BUILDDIR)/loader.S.o $(BUILDDIR)/loader.c.o
 	objcopy -S -O binary -j .text $(BUILDDIR)/loader.o $@
 
-$(BUILDDIR)/kernel: $(kobj)
-	ld $(LDFLAGS) -T $(KDIR)/kernel.ld -N -e main -o $@ $^
+$(BUILDDIR)/kernel: $(KSUBDIRS)
+	gcc $(CFLAGS) -I $(KDIR) $(KDIR)/main.c -c -o $(BUILDDIR)/main.o
+	ld $(LDFLAGS) -T $(KDIR)/kernel.ld -N -e main -o $@ $(KOBJS)
 
-$(BUILDDIR)/%.o : $(KDIR)/%.c
-	gcc -DLOG_LEVEL=$(LOG_LEVEL) $(CFLAGS) $< -c -o $@ 
+$(KSUBDIRS): 
+	$(MAKE) -f $(KDIR)/Makefile -C $@
 
 $(BUILDDIR)/hd.img: $(BUILDDIR)/mbr $(BUILDDIR)/loader $(BUILDDIR)/kernel
 	dd if=$(BUILDDIR)/mbr of=$(BUILDDIR)/hd.img bs=512 count=1 conv=notrunc
@@ -56,4 +60,4 @@ qemu-gdb: $(BUILDDIR)/hd.img
 clean:
 	rm -rf $(BUILDDIR)
 
-.PHONY: all clean
+.PHONY: all clean $(KSUBDIRS)

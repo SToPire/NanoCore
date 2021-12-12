@@ -2,7 +2,7 @@
  * This file comes from OSDev Wiki,
  * see https://wiki.osdev.org/Serial_Ports
  */
-#include "include/uart.h"
+#include "uart.h"
 
 #define PORT 0x3F8
 

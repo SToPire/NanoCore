@@ -1,6 +1,6 @@
 #pragma once
 
-#include "x86.h"
+#include "common/x86.h"
 
 int init_serial();
 char read_serial();
