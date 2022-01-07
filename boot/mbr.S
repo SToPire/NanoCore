@@ -1,4 +1,4 @@
-; Warning: Now MBR is 507 bytes in size, DO NOT ADD ANYTHING!!
+; Warning: MBR's size is close to its upper bound(510 bytes), DO NOT ADD ANYTHING!!
 
 %include "asm.inc"
 

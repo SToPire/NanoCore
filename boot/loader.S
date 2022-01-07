@@ -1,4 +1,4 @@
-; Warning: Now loader is 502 bytes in size, remember to modify Makefile if ADD ANYTHING!!
+; Warning: loader's size is close to disk sector size(512 bytes), remember to modify Makefile if ADD ANYTHING!!
 
 %include "asm.inc"
 

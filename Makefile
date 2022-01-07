@@ -21,7 +21,10 @@ KOBJS = $(shell find $(KDIR) -name "*.c" \
 
 KSUBDIRS := $(wildcard $(KDIR)/*/.)
 
-all: $(BUILDDIR)/hd.img
+build:
+	docker run -it --rm -u $(shell id -u ${USER}):$(shell id -g ${USER}) -v $(shell pwd):/sos -w /sos stopire/sos-builder:v1 make docker-build
+
+docker-build: $(BUILDDIR)/hd.img
 
 $(BUILDDIR)/mbr: $(BOOTDIR)/mbr.S $(BOOTDIR)/mbr.c
 	mkdir -p $(BUILDDIR)
@@ -57,7 +60,10 @@ qemu: $(BUILDDIR)/hd.img
 qemu-gdb: $(BUILDDIR)/hd.img
 	$(QEMU) -drive file=$(BUILDDIR)/hd.img,format=raw -S -gdb tcp::6789
 
+gen-builder:
+	docker build -t sos-builder --network=host .
+
 clean:
 	rm -rf $(BUILDDIR)
 
-.PHONY: all clean $(KSUBDIRS)
+.PHONY: build clean gen-builder $(KSUBDIRS)
