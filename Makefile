@@ -9,14 +9,19 @@ CFLAGS += -mno-red-zone -mno-mmx -mno-sse -mno-sse2
 # warning=0, info=1, debug=2
 CFLAGS += -DLOG_LEVEL=1
 
-ASFLAGS = -f elf64 -F dwarf -g
+export ASFLAGS = -f elf64 -F dwarf -g
 LDFLAGS = -m elf_x86_64
 
 QEMU = qemu-system-x86_64 -nographic -serial mon:stdio
 
-KOBJS = $(shell find $(KDIR) -name "*.c" \
+KCOBJS = $(shell find $(KDIR) -name "*.c" \
 | sed -r 's|$(KDIR).*/|$(BUILDDIR)/|g' \
 | sed -r 's/.c/.o/g' \
+| tr -s "\n" " " )
+
+KASMOBJS = $(shell find $(KDIR) -name "*.S" \
+| sed -r 's|$(KDIR).*/|$(BUILDDIR)/|g' \
+| sed -r 's/.S/.S.o/g' \
 | tr -s "\n" " " )
 
 KSUBDIRS := $(wildcard $(KDIR)/*/.)
@@ -43,8 +48,8 @@ $(BUILDDIR)/loader: $(BOOTDIR)/loader.S $(BOOTDIR)/loader.c
 	objcopy -S -O binary -j .text $(BUILDDIR)/loader.o $@
 
 $(BUILDDIR)/kernel: $(KSUBDIRS)
-	gcc $(CFLAGS) -I $(KDIR) $(KDIR)/main.c -c -o $(BUILDDIR)/main.o
-	ld $(LDFLAGS) -T $(KDIR)/kernel.ld -N -e main -o $@ $(KOBJS)
+	gcc $(CFLAGS) -I $(KDIR)/include $(KDIR)/main.c -c -o $(BUILDDIR)/main.o
+	ld $(LDFLAGS) -T $(KDIR)/kernel.ld -N -e main -o $@ $(KCOBJS) $(KASMOBJS)
 
 $(KSUBDIRS): 
 	$(MAKE) -f $(KDIR)/Makefile -C $@
@@ -54,14 +59,19 @@ $(BUILDDIR)/hd.img: $(BUILDDIR)/mbr $(BUILDDIR)/loader $(BUILDDIR)/kernel
 	dd if=$(BUILDDIR)/loader of=$(BUILDDIR)/hd.img bs=512 seek=1 conv=notrunc
 	dd if=$(BUILDDIR)/kernel of=$(BUILDDIR)/hd.img bs=512 seek=2 conv=notrunc
 
-qemu: $(BUILDDIR)/hd.img
+qemu: 
 	$(QEMU) -drive file=$(BUILDDIR)/hd.img,format=raw
 
-qemu-gdb: $(BUILDDIR)/hd.img
+qemu-gdb: 
 	$(QEMU) -drive file=$(BUILDDIR)/hd.img,format=raw -S -gdb tcp::6789
 
 gen-builder:
 	docker build -t sos-builder --network=host .
+
+compile-commands:
+# compile locally, correctness is not important
+	bear $(MAKE) docker-build
+	rm -rf build
 
 clean:
 	rm -rf $(BUILDDIR)

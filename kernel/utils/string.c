@@ -1,4 +1,4 @@
-#include "uart.h"
+#include "utils/uart.h"
 
 #define PRINTK_BUF_LEN 1024
 
