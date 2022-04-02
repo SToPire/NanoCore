@@ -74,3 +74,5 @@
 #define MIN(x, y)	((x) < (y) ? (x) : (y))
 
 #define IS_ALIGNED(x, a)	(((x) & ((typeof(x))(a) - 1)) == 0)
+
+#define TEST_ON

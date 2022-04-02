@@ -15,6 +15,21 @@ size_t strlen(const char *s) {
   return (size_t)(p - s);
 }
 
+int strcmp(const char *s1, const char *s2) {
+  while (*s1 && *s2) {
+    if (*s1 != *s2) return *s1 - *s2;
+    ++s1;
+    ++s2;
+  }
+  if (!*s1 && !*s2) {
+    return 0;
+  } else if (!*s1) {
+    return -1;
+  } else { // !*s2
+    return 1;
+  }
+}
+
 static int vsprintf(char *str, const char *fmt, va_list ap) {
   char *outptr = str;
   char *s;
@@ -33,9 +48,7 @@ static int vsprintf(char *str, const char *fmt, va_list ap) {
   while (*fmt != '\0') {
     if (in_format) {
       switch (*fmt) {
-      case 'l':
-        long_prefix = true;
-        break;
+      case 'l': long_prefix = true; break;
       case 'c':
         d = va_arg(ap, int);
         *outptr++ = d;
@@ -54,8 +67,7 @@ static int vsprintf(char *str, const char *fmt, va_list ap) {
         in_format = false;
         break;
       case 'd': // integer
-        if (long_prefix)
-          d = va_arg(ap, long long);
+        if (long_prefix) d = va_arg(ap, long long);
         else
           d = va_arg(ap, int);
         if (d < 0) {
@@ -86,8 +98,7 @@ static int vsprintf(char *str, const char *fmt, va_list ap) {
         long_prefix = false;
         break;
       case 'u': // unsigned
-        if (long_prefix)
-          u = va_arg(ap, unsigned long long);
+        if (long_prefix) u = va_arg(ap, unsigned long long);
         else
           u = va_arg(ap, unsigned);
         if (u == 0) {
@@ -115,8 +126,7 @@ static int vsprintf(char *str, const char *fmt, va_list ap) {
           *outptr++ = '0';
           *outptr++ = 'x';
         }
-        if (long_prefix)
-          u = va_arg(ap, unsigned long long);
+        if (long_prefix) u = va_arg(ap, unsigned long long);
         else
           u = va_arg(ap, unsigned);
         if (u == 0) {
@@ -190,4 +200,18 @@ int printk(const char *fmt, ...) {
 
   va_end(ap);
   return ret;
+}
+
+void Test_string() {
+#ifdef TEST_ON
+  BUG_ON(!(strcmp("", "") == 0));
+  BUG_ON(!(strcmp("", "as") < 0));
+  BUG_ON(!(strcmp("s", "s") == 0));
+  BUG_ON(!(strcmp("s", "s1") < 0));
+  BUG_ON(!(strcmp("s2", "s34") < 0));
+  BUG_ON(!(strcmp("sss", "ss") > 0));
+  BUG_ON(!(strcmp("abc", "bd") < 0));
+
+  printk("[TEST] Test_string is ok.\n");
+#endif
 }

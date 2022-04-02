@@ -12,6 +12,8 @@ int main() {
   init_serial();
   print_welcome();
 
+  Test_string();
+
   while (1)
     ;
 }
