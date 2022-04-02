@@ -18,8 +18,8 @@ size_t strlen(const char *s) {
 static int vsprintf(char *str, const char *fmt, va_list ap) {
   char *outptr = str;
   char *s;
-  int d;
-  unsigned u;
+  long long d;
+  unsigned long long u;
   char tmp_num[20];
 
   // flag for printing negative number with no zero_padded
@@ -27,11 +27,15 @@ static int vsprintf(char *str, const char *fmt, va_list ap) {
 
   bool zero_padded = false;
   bool in_format = false;
-  bool width_now = false;
+  bool long_prefix = false;
+  unsigned width_now = 0;
   size_t i;
   while (*fmt != '\0') {
     if (in_format) {
       switch (*fmt) {
+      case 'l':
+        long_prefix = true;
+        break;
       case 'c':
         d = va_arg(ap, int);
         *outptr++ = d;
@@ -50,7 +54,10 @@ static int vsprintf(char *str, const char *fmt, va_list ap) {
         in_format = false;
         break;
       case 'd': // integer
-        d = va_arg(ap, int);
+        if (long_prefix)
+          d = va_arg(ap, long long);
+        else
+          d = va_arg(ap, int);
         if (d < 0) {
           d = -d;
           if (zero_padded) {
@@ -76,9 +83,13 @@ static int vsprintf(char *str, const char *fmt, va_list ap) {
         for (i--; i; i--)
           *outptr++ = tmp_num[i];
         in_format = false;
+        long_prefix = false;
         break;
       case 'u': // unsigned
-        u = va_arg(ap, unsigned);
+        if (long_prefix)
+          u = va_arg(ap, unsigned long long);
+        else
+          u = va_arg(ap, unsigned);
         if (u == 0) {
           *outptr++ = '0';
           --width_now;
@@ -96,6 +107,7 @@ static int vsprintf(char *str, const char *fmt, va_list ap) {
         for (i--; i; i--)
           *outptr++ = tmp_num[i];
         in_format = false;
+        long_prefix = false;
         break;
       case 'x': // hex
       case 'p': // pointer
@@ -103,7 +115,10 @@ static int vsprintf(char *str, const char *fmt, va_list ap) {
           *outptr++ = '0';
           *outptr++ = 'x';
         }
-        u = va_arg(ap, unsigned);
+        if (long_prefix)
+          u = va_arg(ap, unsigned long long);
+        else
+          u = va_arg(ap, unsigned);
         if (u == 0) {
           *outptr++ = '0';
           --width_now;
@@ -126,6 +141,7 @@ static int vsprintf(char *str, const char *fmt, va_list ap) {
         for (i--; i; i--)
           *outptr++ = tmp_num[i];
         in_format = false;
+        long_prefix = false;
         break;
       case '0':
         if (*(fmt - 1) == '%') zero_padded = true;
@@ -148,7 +164,7 @@ static int vsprintf(char *str, const char *fmt, va_list ap) {
       ++fmt;
     } else if (*fmt == '%') {
       in_format = true;
-      width_now = false;
+      width_now = 0;
       zero_padded = false;
       ++fmt;
     } else {

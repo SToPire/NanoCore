@@ -1,12 +1,17 @@
 #include "common/klog.h"
+#include "mm/layout.h"
 #include "utils/string.h"
 #include "utils/uart.h"
-#include "mm/layout.h"
+
+void print_welcome() {
+  printk("\n");
+  kinfo("sos booting...\n");
+}
 
 int main() {
   init_serial();
-  printk("\n");
-  kinfo("sos booting...\n");
+  print_welcome();
+
   while (1)
     ;
 }
