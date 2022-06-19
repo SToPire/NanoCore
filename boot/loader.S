@@ -30,3 +30,4 @@ map_kernel:
     pop rdi
     pop rax
 
+    ret

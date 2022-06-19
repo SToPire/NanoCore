@@ -1,5 +1,5 @@
 #include "common/klog.h"
-#include "mm/layout.h"
+#include "mm/mm.h"
 #include "utils/string.h"
 #include "utils/uart.h"
 
@@ -12,7 +12,7 @@ int main() {
   init_serial();
   print_welcome();
 
-  Test_string();
+  mm_init();
 
   while (1)
     ;

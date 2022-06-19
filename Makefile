@@ -7,7 +7,7 @@ CFLAGS += -fno-omit-frame-pointer -fno-stack-protector
 CFLAGS += -mno-red-zone -mno-mmx -mno-sse -mno-sse2 
 
 # warning=0, info=1, debug=2
-CFLAGS += -DLOG_LEVEL=1
+CFLAGS += -DLOG_LEVEL=2
 
 export ASFLAGS = -f elf64 -F dwarf -g
 LDFLAGS = -m elf_x86_64
@@ -48,8 +48,9 @@ $(BUILDDIR)/loader: $(BOOTDIR)/loader.S $(BOOTDIR)/loader.c
 	objcopy -S -O binary -j .text $(BUILDDIR)/loader.o $@
 
 $(BUILDDIR)/kernel: $(KSUBDIRS)
+	nasm $(ASFLAGS) $(KDIR)/entry.S -o $(BUILDDIR)/entry.S.o
 	gcc $(CFLAGS) -I $(KDIR)/include $(KDIR)/main.c -c -o $(BUILDDIR)/main.o
-	ld $(LDFLAGS) -T $(KDIR)/kernel.ld -N -e main -o $@ $(KCOBJS) $(KASMOBJS)
+	ld $(LDFLAGS) -T $(KDIR)/kernel.ld -N -e kentry -o $@ $(KCOBJS) $(KASMOBJS)
 
 $(KSUBDIRS): 
 	$(MAKE) -f $(KDIR)/Makefile -C $@
@@ -70,7 +71,7 @@ gen-builder:
 
 compile-commands:
 # compile locally, correctness is not important
-	bear $(MAKE) docker-build
+	bear -- $(MAKE) docker-build
 	rm -rf build
 
 clean:

@@ -78,8 +78,7 @@ static int vsprintf(char *str, const char *fmt, va_list ap) {
           } else
             d_negative_no_zero_padded_flag = true;
         } else if (d == 0) {
-          *outptr++ = '0';
-          --width_now;
+          if (width_now == 0) width_now = 1;
           while (width_now-- > 0)
             *outptr++ = '0';
         }
@@ -102,8 +101,7 @@ static int vsprintf(char *str, const char *fmt, va_list ap) {
         else
           u = va_arg(ap, unsigned);
         if (u == 0) {
-          *outptr++ = '0';
-          --width_now;
+          if (width_now == 0) width_now = 1;
           while (width_now-- > 0)
             *outptr++ = '0';
         }
@@ -125,13 +123,13 @@ static int vsprintf(char *str, const char *fmt, va_list ap) {
         if (*fmt == 'p') {
           *outptr++ = '0';
           *outptr++ = 'x';
+          long_prefix = true;
         }
         if (long_prefix) u = va_arg(ap, unsigned long long);
         else
           u = va_arg(ap, unsigned);
         if (u == 0) {
-          *outptr++ = '0';
-          --width_now;
+          if (width_now == 0) width_now = 1;
           while (width_now-- > 0)
             *outptr++ = '0';
         }
@@ -200,18 +198,4 @@ int printk(const char *fmt, ...) {
 
   va_end(ap);
   return ret;
-}
-
-void Test_string() {
-#ifdef TEST_ON
-  BUG_ON(!(strcmp("", "") == 0));
-  BUG_ON(!(strcmp("", "as") < 0));
-  BUG_ON(!(strcmp("s", "s") == 0));
-  BUG_ON(!(strcmp("s", "s1") < 0));
-  BUG_ON(!(strcmp("s2", "s34") < 0));
-  BUG_ON(!(strcmp("sss", "ss") > 0));
-  BUG_ON(!(strcmp("abc", "bd") < 0));
-
-  printk("[TEST] Test_string is ok.\n");
-#endif
 }

@@ -11,3 +11,9 @@ static inline u8 inb(u16 port) {
   asm volatile("in %1,%0" : "=a"(data) : "d"(port));
   return data;
 }
+
+static inline void
+lcr3(u64 val)
+{
+  asm volatile("movq %0,%%cr3" : : "r" (val));
+}
