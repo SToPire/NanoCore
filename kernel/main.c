@@ -3,6 +3,8 @@
 #include "utils/string.h"
 #include "utils/uart.h"
 
+int errno;
+
 void print_welcome() {
   printk("\n");
   kinfo("sos booting...\n");
@@ -14,6 +16,7 @@ int main() {
 
   mm_init();
 
+  kdebug("spinning!\n");
   while (1)
     ;
 }

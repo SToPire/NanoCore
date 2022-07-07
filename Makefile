@@ -10,7 +10,7 @@ CFLAGS += -mno-red-zone -mno-mmx -mno-sse -mno-sse2
 CFLAGS += -DLOG_LEVEL=2
 
 export ASFLAGS = -f elf64 -F dwarf -g
-LDFLAGS = -m elf_x86_64
+LDFLAGS = -m elf_x86_64 --no-relax
 
 QEMU = qemu-system-x86_64 -nographic -serial mon:stdio
 

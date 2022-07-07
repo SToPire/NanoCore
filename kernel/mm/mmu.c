@@ -10,6 +10,10 @@
 extern char etext[];
 extern char end[];
 
+extern struct mem_pool global_mp;
+
+extern int errno;
+
 static struct init_mapping {
   vaddr_t virt;
   paddr_t p_beg;
@@ -51,9 +55,10 @@ void __map_one_page(ptp_t *pgtbl, vaddr_t va, paddr_t pa, u32 flag) {
         ptp->ent[index].pde.is_user = 0;
         ptp->ent[index].pde.is_writeable = 1;
 
-        paddr_t tmp = kzalloc();
+        paddr_t tmp = kzalloc(&global_mp, PAGE_SIZE);
         if (!tmp) {
-          WARN("no space for kernel page table");
+          kerror("kzalloc failed, errno=%d\n", errno);
+          ABORT();
           return;
         }
 
@@ -68,9 +73,10 @@ void __map_one_page(ptp_t *pgtbl, vaddr_t va, paddr_t pa, u32 flag) {
 void init_kpgtbl() {
   int pgcnt = 0;
 
-  ptp_t *pgtbl = (ptp_t *)kzalloc();
+  ptp_t *pgtbl = (ptp_t *)kzalloc(&global_mp, PAGE_SIZE);
   if (!pgtbl) {
-    WARN("no space for kernel page table");
+    kerror("kzalloc failed, errno=%d\n", errno);
+    ABORT();
     return;
   }
 

@@ -23,6 +23,12 @@
 #define ROUND_DOWN(x, n)   ((x) & ~((n)-1))
 #define DIV_ROUND_UP(n, d) (((n) + (d)-1) / (d))
 
+#define ABORT()                                                                \
+  printk("ABORTING!\n");                                                       \
+  do {                                                                         \
+    for (;;) {}                                                                \
+  } while (0)
+
 #define BUG_ON(expr)                                                           \
   do {                                                                         \
     if ((expr)) {                                                              \
