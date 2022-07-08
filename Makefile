@@ -12,7 +12,7 @@ CFLAGS += -DLOG_LEVEL=2
 export ASFLAGS = -f elf64 -F dwarf -g
 LDFLAGS = -m elf_x86_64 --no-relax
 
-QEMU = qemu-system-x86_64 -nographic -serial mon:stdio
+QEMU = qemu-system-x86_64 -nographic -serial mon:stdio -m 512
 
 KCOBJS = $(shell find $(KDIR) -name "*.c" \
 | sed -r 's|$(KDIR).*/|$(BUILDDIR)/|g' \

@@ -11,7 +11,7 @@ extern char etext[];
 extern char end[];
 
 extern struct mem_pool global_mp;
-
+extern bool is_kpgtbl_set;
 extern int errno;
 
 static struct init_mapping {
@@ -55,11 +55,10 @@ void __map_one_page(ptp_t *pgtbl, vaddr_t va, paddr_t pa, u32 flag) {
         ptp->ent[index].pde.is_user = 0;
         ptp->ent[index].pde.is_writeable = 1;
 
-        paddr_t tmp = kzalloc(&global_mp, PAGE_SIZE);
+        paddr_t tmp = kzalloc(PAGE_SIZE);
         if (!tmp) {
           kerror("kzalloc failed, errno=%d\n", errno);
           ABORT();
-          return;
         }
 
         ptp->ent[index].pde.nxt_addr = GET_PTE_ADDR(tmp);
@@ -73,11 +72,10 @@ void __map_one_page(ptp_t *pgtbl, vaddr_t va, paddr_t pa, u32 flag) {
 void init_kpgtbl() {
   int pgcnt = 0;
 
-  ptp_t *pgtbl = (ptp_t *)kzalloc(&global_mp, PAGE_SIZE);
+  ptp_t *pgtbl = (ptp_t *)kzalloc(PAGE_SIZE);
   if (!pgtbl) {
     kerror("kzalloc failed, errno=%d\n", errno);
     ABORT();
-    return;
   }
 
   for (int i = 0; i < ARRSIZE(init_mapping); ++i) {
@@ -92,4 +90,5 @@ void init_kpgtbl() {
   kdebug("[init_kpgtbl] %d pages is mapped\n", pgcnt);
 
   lcr3((paddr_t)pgtbl);
+  is_kpgtbl_set = true;
 }

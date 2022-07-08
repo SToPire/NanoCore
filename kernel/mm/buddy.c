@@ -6,13 +6,13 @@
 #include "mm/mm.h"
 #include "mm/mmu.h"
 #include "utils/list.h"
-#include <utils/util.h>
+#include "utils/util.h"
 
 extern int errno;
 
 void _print_buddy_info(struct mem_pool *mp) {
   u64 sum = 0;
-  for (int i = MAX_ORDER - 1; i >= 0; i--) {
+  for (int i = BUDDY_MAX_ORDER - 1; i >= 0; i--) {
     u8 nr_free = mp->freelists[i].nr_free;
     if (nr_free) {
       sum += (1 << i) * nr_free;
@@ -49,12 +49,12 @@ void init_buddy(struct mem_pool *mp, vaddr_t start, vaddr_t end) {
     list_init(&pgmeta[i].node);
   }
 
-  while ((step << 1) <= pgcnt && order < MAX_ORDER - 1) {
+  while ((step << 1) <= pgcnt && order < BUDDY_MAX_ORDER - 1) {
     step <<= 1;
     order++;
   }
 
-  kdebug("[buddy_init] pgcnt=%d with max_order=%d\n", pgcnt, order);
+  kdebug("[buddy_init] pgcnt=%d with BUDDY_MAX_ORDER=%d\n", pgcnt, order);
 
   for (int remain = pgcnt; remain;) {
     int pgnum = pgcnt - remain;
@@ -74,12 +74,12 @@ void init_buddy(struct mem_pool *mp, vaddr_t start, vaddr_t end) {
 }
 
 /* convert between "struct page*" and page pointer*/
-void *_page_to_virt(struct mem_pool *mp, struct page *page) {
+void *page_to_virt(struct mem_pool *mp, struct page *page) {
   u64 pgnum = page - (struct page *)mp->page_meta_start;
   return (void *)mp->page_area_start + pgnum * PAGE_SIZE;
 }
 
-struct page *_virt_to_page(struct mem_pool *mp, void *addr) {
+struct page *virt_to_page(struct mem_pool *mp, void *addr) {
   u64 pgnum = ((vaddr_t)addr - mp->page_area_start) / PAGE_SIZE;
   return (struct page *)mp->page_meta_start + pgnum;
 }
@@ -88,7 +88,7 @@ struct page *_get_buddy(struct mem_pool *mp, struct page *free_blk, int order) {
   void *blk_addr, *buddy_addr;
   u64 offset;
 
-  blk_addr = _page_to_virt(mp, free_blk);
+  blk_addr = page_to_virt(mp, free_blk);
   offset = (u64)(blk_addr - mp->page_area_start);
 
   offset ^= (1ULL << (PAGE_SHIFT + order));
@@ -96,7 +96,7 @@ struct page *_get_buddy(struct mem_pool *mp, struct page *free_blk, int order) {
 
   BUG_ON((vaddr_t)buddy_addr < mp->page_area_start ||
          (vaddr_t)buddy_addr > mp->page_area_start + mp->size);
-  return _virt_to_page(mp, buddy_addr);
+  return virt_to_page(mp, buddy_addr);
 }
 
 void _split_blk(struct mem_pool *mp, struct page *free_blk, int cur_order,
@@ -123,7 +123,7 @@ void _merge_blk(struct mem_pool *mp, struct page **blk) {
   int order;
 
   order = (*blk)->order;
-  if (order == MAX_ORDER - 1) return;
+  if (order == BUDDY_MAX_ORDER - 1) return;
 
   buddy = _get_buddy(mp, *blk, order);
   if (order != buddy->order || buddy->alloc) return;
@@ -145,17 +145,18 @@ void _merge_blk(struct mem_pool *mp, struct page **blk) {
 }
 
 paddr_t buddy_alloc(struct mem_pool *mp, size_t size) {
+  if(size==4096) kdebug("here");
   int order = 0;
 
   while ((1UL << order) * PAGE_SIZE < size)
     order++;
 
-  if (order >= MAX_ORDER) {
+  if (order >= BUDDY_MAX_ORDER) {
     errno = -EINVAL;
     return (paddr_t)NULL;
   }
 
-  for (int cur_order = order; cur_order < MAX_ORDER; ++cur_order) {
+  for (int cur_order = order; cur_order < BUDDY_MAX_ORDER; ++cur_order) {
     if (mp->freelists[cur_order].nr_free > 0) {
       struct list_head *free_node = mp->freelists[cur_order].fl_head.next;
       struct page *free_blk = list_entry(free_node, struct page, node);
@@ -166,8 +167,8 @@ paddr_t buddy_alloc(struct mem_pool *mp, size_t size) {
       _split_blk(mp, free_blk, cur_order, order);
       BUG_ON(free_blk->order != order);
 
-      free_blk->alloc = true;
-      return V2P(_page_to_virt(mp, free_blk));
+      free_blk->alloc = true; 
+      return V2P(page_to_virt(mp, free_blk));
     }
   }
 
@@ -181,7 +182,7 @@ void buddy_free(struct mem_pool *mp, paddr_t addr) {
   BUG_ON(P2V(addr) < mp->page_area_start ||
          P2V(addr) > mp->page_area_start + mp->size);
 
-  blk = _virt_to_page(mp, (void *)P2V(addr));
+  blk = virt_to_page(mp, (void *)P2V(addr));
   blk->alloc = false;
 
   _merge_blk(mp, &blk);
