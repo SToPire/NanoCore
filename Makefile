@@ -16,12 +16,12 @@ QEMU = qemu-system-x86_64 -nographic -serial mon:stdio -m 512
 
 KCOBJS = $(shell find $(KDIR) -name "*.c" \
 | sed -r 's|$(KDIR).*/|$(BUILDDIR)/|g' \
-| sed -r 's/.c/.o/g' \
+| sed -r 's/\.c/.o/g' \
 | tr -s "\n" " " )
 
 KASMOBJS = $(shell find $(KDIR) -name "*.S" \
 | sed -r 's|$(KDIR).*/|$(BUILDDIR)/|g' \
-| sed -r 's/.S/.S.o/g' \
+| sed -r 's/\.S/.S.o/g' \
 | tr -s "\n" " " )
 
 KSUBDIRS := $(wildcard $(KDIR)/*/.)
