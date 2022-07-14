@@ -2,6 +2,9 @@
 
 #include "type.h"
 
+#define CODE_SEG_SELECTOR (1 << 3);
+#define DATA_SEG_SELECTOR (2 << 3);
+
 static inline void outb(u16 port, u16 data) {
   asm volatile("out %0,%1" : : "a"(data), "d"(port));
 }

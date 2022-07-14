@@ -26,9 +26,9 @@ static struct init_mapping {
     // kernel data and physical memory
     {(vaddr_t)etext, V2P(etext), PHY_MAX_OFFSET, PTE_WRITE},
 
-    // direct mapping lower 3GB-4GB
+    // direct mapping lower 3GB-4GB (for lapic MMIO address)
     {0xC0000000, 0xC0000000, 0x100000000, PTE_WRITE},
-    // direct mapping lower 1MB
+    // direct mapping lower 1MB (for GDT initialized in bootloader)
     {0, 0, 0x100000, PTE_WRITE},
 };
 

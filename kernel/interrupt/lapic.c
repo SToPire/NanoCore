@@ -22,7 +22,7 @@
 #define LAPIC_SVT_REG 0xF0
 #define SVT_ENABLE    (1 << 8)
 
-// Interrupt Command Register (Chapter 10.6)
+// Interrupt Command Register (Section 10.6)
 #define LAPIC_ICR_LO              0x300
 #define LAPIC_ICR_HI              0x310
 #define ICR_DEST_ALL_INCLUDE_SELF (1 << 19)
@@ -80,15 +80,15 @@ static inline u64 lapic_read(paddr_t base, u64 off, u64 size) {
 void lapic_init() {
   paddr_t lapic_base = get_lapic_base_addr();
 
-  // SVT (Chapter 10.9)
+  // SVT (Section 10.9)
   lapic_write(lapic_base, LAPIC_SVT_REG, 4, SVT_ENABLE | IRQ_SPURIOUS);
 
-  // enable timer (Chapter 10.5.4)
+  // enable timer (Section 10.5.4)
   lapic_write(lapic_base, LAPIC_TIMER_REG, 4, TIMER_PERIODIC_BIT | IRQ_TIMER);
   lapic_write(lapic_base, LAPIC_TIMER_DCR, 4, 0);
   lapic_write(lapic_base, LAPIC_TIMER_TICR, 4, 1000 * 1000 * 10);
 
-  // Local interrupt pins are not needed in MP System, see Chapter 10.1
+  // Local interrupt pins are not needed in MP System, see Section 10.1
   lapic_write(lapic_base, LAPIC_LINT0_REG, 4, LAPIC_LVT_MASKED);
   lapic_write(lapic_base, LAPIC_LINT1_REG, 4, LAPIC_LVT_MASKED);
 
@@ -101,13 +101,13 @@ void lapic_init() {
   // Ack any on-going interrupts
   lapic_write(lapic_base, LAPIC_EOI_REG, 4, 0);
 
-  // send 'INIT Level De-assert' to sync LAPIC ArbIDs, see Chapter 10.6.1
+  // send 'INIT Level De-assert' to sync LAPIC ArbIDs, see Section 10.6.1
   lapic_write(lapic_base, LAPIC_ICR_HI, 4, 0);
   lapic_write(lapic_base, LAPIC_ICR_LO, 4, ICR_SYNC_ARBID);
   while (lapic_read(lapic_base, LAPIC_ICR_LO, 4) & ICR_DELIV_STAT)
     ;
 
-  // Do not block any interrupts, see Chapter 10.8.3.1
+  // Do not block any interrupts, see Section 10.8.3.1
   lapic_write(lapic_base, LAPIC_TP_REG, 4, 0);
 }
 
