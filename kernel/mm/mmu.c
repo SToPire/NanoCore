@@ -25,6 +25,11 @@ static struct init_mapping {
 
     // kernel data and physical memory
     {(vaddr_t)etext, V2P(etext), PHY_MAX_OFFSET, PTE_WRITE},
+
+    // direct mapping lower 3GB-4GB
+    {0xC0000000, 0xC0000000, 0x100000000, PTE_WRITE},
+    // direct mapping lower 1MB
+    {0, 0, 0x100000, PTE_WRITE},
 };
 
 void __map_one_page(ptp_t *pgtbl, vaddr_t va, paddr_t pa, u32 flag) {
@@ -64,7 +69,7 @@ void __map_one_page(ptp_t *pgtbl, vaddr_t va, paddr_t pa, u32 flag) {
         ptp->ent[index].pde.nxt_addr = GET_PTE_ADDR(tmp);
       }
 
-      ptp = (ptp_t *)(ptp->ent[index].pde.nxt_addr << PAGE_SHIFT);
+      ptp = (ptp_t *)((u64)(ptp->ent[index].pde.nxt_addr) << PAGE_SHIFT);
     }
   }
 }

@@ -1,12 +1,10 @@
-/*
- * This file comes from OSDev Wiki,
- * see https://wiki.osdev.org/Serial_Ports
- */
-#include "utils/uart.h"
+#pragma once
+
+#include "common/x86.h"
 
 #define PORT 0x3F8
 
-int init_serial() {
+static inline int init_serial() {
   outb(PORT + 1, 0x00); // Disable all interrupts
   outb(PORT + 3, 0x80); // Enable DLAB (set baud rate divisor)
   outb(PORT + 0, 0x03); // Set divisor to 3 (lo byte) 38400 baud
@@ -19,7 +17,9 @@ int init_serial() {
                         // returns same byte)
 
   // Check if serial is faulty (i.e: not same byte as sent)
-  if (inb(PORT + 0) != 0xAE) { return 1; }
+  if (inb(PORT + 0) != 0xAE) {
+    return 1;
+  }
 
   // If serial is not faulty set it in normal operation mode
   // (not-loopback with IRQs enabled and OUT#1 and OUT#2 bits enabled)
@@ -27,13 +27,13 @@ int init_serial() {
   return 0;
 }
 
-char read_serial() {
+static inline char read_serial() {
   while ((inb(PORT + 5) & 1) == 0)
     ;
   return inb(PORT);
 }
 
-void write_serial(char c) {
+static inline void write_serial(char c) {
   while ((inb(PORT + 5) & 0x20) == 0)
     ;
   outb(PORT, c);
