@@ -268,7 +268,7 @@ global allvectors
 section .data
 allvectors:
 %assign i 0 
-%rep    32 
+%rep    256 
     dq vector%+i 
 %assign i i+1 
 %endrep

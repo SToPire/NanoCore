@@ -9,6 +9,11 @@ extern mbr_c_entry
 
 _start:
 [bits 16]
+    ; disable 8259 PIC
+    mov al, 0xff
+    out 0xa1, al
+    out 0x21, al
+
     cli ; disable interrupts enabled by BIOS
 
     xor ax,ax

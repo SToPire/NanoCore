@@ -110,8 +110,3 @@ void lapic_init() {
   // Do not block any interrupts, see Section 10.8.3.1
   lapic_write(lapic_base, LAPIC_TP_REG, 4, 0);
 }
-
-void intr_init() {
-  lapic_init();
-  idt_init();
-}

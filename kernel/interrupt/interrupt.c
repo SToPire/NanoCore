@@ -29,3 +29,8 @@ void idt_init() {
   lidt((u64)idt, sizeof(idt));
   sti();
 }
+
+void intr_init() {
+  lapic_init();
+  idt_init();
+}
