@@ -24,12 +24,12 @@ static struct init_mapping {
     {(vaddr_t)KERNEL_VSTART, (paddr_t)KERNEL_PSTART, V2P(etext), 0},
 
     // kernel data and physical memory
-    {(vaddr_t)etext, V2P(etext), PHY_MAX_OFFSET, PTE_WRITE},
+    {(vaddr_t)etext, V2P(etext), PHY_MAX_OFFSET, PTE_WRITE | PTE_NONEXEC},
 
     // direct mapping lower 3GB-4GB (for lapic MMIO address)
-    {0xC0000000, 0xC0000000, 0x100000000, PTE_WRITE},
+    {0xC0000000, 0xC0000000, 0x100000000, PTE_WRITE | PTE_NONEXEC},
     // direct mapping lower 1MB (for GDT initialized in bootloader)
-    {0, 0, 0x100000, PTE_WRITE},
+    {0, 0, 0x100000, PTE_WRITE | PTE_NONEXEC},
 };
 
 void __map_one_page(ptp_t *pgtbl, vaddr_t va, paddr_t pa, u32 flag) {
@@ -50,7 +50,8 @@ void __map_one_page(ptp_t *pgtbl, vaddr_t va, paddr_t pa, u32 flag) {
       if (!ptp->ent[index].pte.is_valid) {
         ptp->ent[index].pte.is_valid = 1;
         ptp->ent[index].pte.is_user = 0;
-        ptp->ent[index].pte.is_writeable = flag & PTE_WRITE;
+        ptp->ent[index].pte.is_writeable = flag & PTE_WRITE ? 1 : 0;
+        ptp->ent[index].pte.non_execute = flag & PTE_NONEXEC ? 1 : 0;
 
         ptp->ent[index].pte.paddr = GET_PTE_ADDR(pa);
       }
@@ -59,6 +60,7 @@ void __map_one_page(ptp_t *pgtbl, vaddr_t va, paddr_t pa, u32 flag) {
         ptp->ent[index].pde.is_valid = 1;
         ptp->ent[index].pde.is_user = 0;
         ptp->ent[index].pde.is_writeable = 1;
+        ptp->ent[index].pde.non_execute = 0;
 
         paddr_t tmp = kzalloc(PAGE_SIZE);
         if (!tmp) {

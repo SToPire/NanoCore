@@ -84,9 +84,11 @@ protected_mode:
     mov cr3,eax
 
     ; set IA32_EFER.LME = 1
+    ; set IA32_EFER.NXE = 1 to enable non-executable bit in page table
     mov ecx,EFER_REG
     rdmsr
     or eax,EFER_LME
+    or eax,EFER_NXE
     wrmsr
 
     ; enable paging

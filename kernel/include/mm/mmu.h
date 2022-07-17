@@ -20,19 +20,20 @@
 #define PTE_ADDR_LEN       (40)
 #define GET_PTE_ADDR(addr) ((addr >> PAGE_SHIFT) & ((1UL << PTE_ADDR_LEN) - 1))
 
-#define PTE_WRITE 0x1
+#define PTE_WRITE   (1 << 0)
+#define PTE_NONEXEC (1 << 1)
 
 typedef union {
   /* L4, L3, L2 page table entry*/
   struct {
     u64 is_valid : 1, is_writeable : 1, is_user : 1, ign1 : 9;
-    u64 nxt_addr : 40, ign2 : 12;
+    u64 nxt_addr : 40, ign2 : 11, non_execute : 1;
   } pde;
 
   /* L1 page table entry*/
   struct {
     u64 is_valid : 1, is_writeable : 1, is_user : 1, ign1 : 9;
-    u64 paddr : 40, ign2 : 12;
+    u64 paddr : 40, ign2 : 11, non_execute : 1;
   } pte;
 
   u64 val;

@@ -6,6 +6,7 @@
 
 %define EFER_REG        0xC0000080
 %define EFER_LME        (1 << 8)
+%define EFER_NXE        (1 << 11)
 
 %define CR0_PE          (1 << 0)
 %define CR0_PG          (1 << 31)
