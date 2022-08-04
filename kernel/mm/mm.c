@@ -10,6 +10,7 @@
 #include "utils/util.h"
 
 extern char end[];
+extern int errno;
 struct mem_pool global_mp;
 
 /* if kpgtbl is already set, we must use vaddr to
@@ -56,10 +57,11 @@ paddr_t kalloc(size_t size) {
 paddr_t kzalloc(size_t size) {
   paddr_t ret = kalloc(size);
   if (!ret) {
-    return (paddr_t)NULL;
+    kerror("kzalloc failed, errno=%d\n", errno);
+    ABORT();
   }
 
-  memset((void *)ret, 0, PAGE_SIZE);
+  memset((void *)P2V(ret), 0, size);
   return ret;
 }
 

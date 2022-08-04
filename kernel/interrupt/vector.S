@@ -1,10 +1,13 @@
 %macro vector 1
 vector%+%1:
-    call exception_handler
-    iretq 
+    push 0x0    ; errno
+    push %1     ; trapno
+    jmp all_handler_asm_entry
 %endmacro
 
 extern exception_handler
+extern iret_from_trapframe
+
 section .text
 vector 0
 vector 1
@@ -262,6 +265,34 @@ vector 252
 vector 253
 vector 254
 vector 255
+
+all_handler_asm_entry:
+    push r15
+    push r14
+    push r13
+    push r12
+    push r11
+    push r10
+    push r9
+    push r8
+    push rbp
+    push rsi
+    push rdi
+    push rdx
+    push rcx
+    push rbx
+    push rax
+
+    ; using kdata segment
+    mov rax, (2 << 3)
+    mov ds, rax
+    mov es, rax
+    mov fs, rax
+    mov gs, rax
+    mov ss, rax
+
+    call exception_handler
+    jmp iret_from_trapframe
 
 ; this array holds entry address of each vector
 global allvectors

@@ -145,7 +145,6 @@ void _merge_blk(struct mem_pool *mp, struct page **blk) {
 }
 
 paddr_t buddy_alloc(struct mem_pool *mp, size_t size) {
-  if(size==4096) kdebug("here");
   int order = 0;
 
   while ((1UL << order) * PAGE_SIZE < size)

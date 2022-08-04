@@ -14,29 +14,31 @@ extern struct mem_pool global_mp;
 extern bool is_kpgtbl_set;
 extern int errno;
 
-static struct init_mapping {
+static struct kernel_mapping {
   vaddr_t virt;
   paddr_t p_beg;
   paddr_t p_end;
   u32 flag;
-} init_mapping[] = {
+} kernel_mapping[] = {
     // kernel code
     {(vaddr_t)KERNEL_VSTART, (paddr_t)KERNEL_PSTART, V2P(etext), 0},
 
     // kernel data and physical memory
     {(vaddr_t)etext, V2P(etext), PHY_MAX_OFFSET, PTE_WRITE | PTE_NONEXEC},
 
-    // direct mapping lower 3GB-4GB (for lapic MMIO address)
-    {0xC0000000, 0xC0000000, 0x100000000, PTE_WRITE | PTE_NONEXEC},
-    // direct mapping lower 1MB (for GDT initialized in bootloader)
-    {0, 0, 0x100000, PTE_WRITE | PTE_NONEXEC},
+    // mapping 3.75-4 GB physical address to kernel for lapic MMIO
+    {P2V(0xF0000000), 0xF0000000, 0x100000000, PTE_WRITE | PTE_NONEXEC},
 };
 
-void __map_one_page(ptp_t *pgtbl, vaddr_t va, paddr_t pa, u32 flag) {
+void map_one_page(ptp_t *pgtbl, vaddr_t va, paddr_t pa, u32 flag,
+                  bool identity_mapping_on) {
   ptp_t *ptp = pgtbl;
 
   for (int l = 4; l >= 1; l--) {
     u16 index;
+
+    // If identity page mapping is not enabled, we must use va.
+    if (!identity_mapping_on) ptp = (ptp_t *)P2V(ptp);
 
     switch (l) {
     case 1: index = GET_L1_INDEX(va); break;
@@ -49,7 +51,7 @@ void __map_one_page(ptp_t *pgtbl, vaddr_t va, paddr_t pa, u32 flag) {
     if (l == 1) {
       if (!ptp->ent[index].pte.is_valid) {
         ptp->ent[index].pte.is_valid = 1;
-        ptp->ent[index].pte.is_user = 0;
+        ptp->ent[index].pte.is_user = flag & PTE_USER ? 1 : 0;
         ptp->ent[index].pte.is_writeable = flag & PTE_WRITE ? 1 : 0;
         ptp->ent[index].pte.non_execute = flag & PTE_NONEXEC ? 1 : 0;
 
@@ -58,15 +60,16 @@ void __map_one_page(ptp_t *pgtbl, vaddr_t va, paddr_t pa, u32 flag) {
     } else {
       if (!ptp->ent[index].pde.is_valid) {
         ptp->ent[index].pde.is_valid = 1;
-        ptp->ent[index].pde.is_user = 0;
+        /* According to Section 4.6.1, if the U/S flag (bit 2) is 0 in at least
+           one of the paging-structure entries, the address is a supervisor-mode
+           address. As a result, we must assign 1 as the default value for
+           'is_user' field in page table structure in order to map user pages.
+           */
+        ptp->ent[index].pde.is_user = 1;
         ptp->ent[index].pde.is_writeable = 1;
         ptp->ent[index].pde.non_execute = 0;
 
         paddr_t tmp = kzalloc(PAGE_SIZE);
-        if (!tmp) {
-          kerror("kzalloc failed, errno=%d\n", errno);
-          ABORT();
-        }
 
         ptp->ent[index].pde.nxt_addr = GET_PTE_ADDR(tmp);
       }
@@ -76,23 +79,26 @@ void __map_one_page(ptp_t *pgtbl, vaddr_t va, paddr_t pa, u32 flag) {
   }
 }
 
-void init_kpgtbl() {
+int set_kmapping(ptp_t *pgtbl, bool identity_mapping_on) {
   int pgcnt = 0;
-
-  ptp_t *pgtbl = (ptp_t *)kzalloc(PAGE_SIZE);
-  if (!pgtbl) {
-    kerror("kzalloc failed, errno=%d\n", errno);
-    ABORT();
-  }
-
-  for (int i = 0; i < ARRSIZE(init_mapping); ++i) {
-    paddr_t curp = ROUND_DOWN(init_mapping[i].p_beg, PAGE_SIZE);
-    vaddr_t curv = ROUND_DOWN(init_mapping[i].virt, PAGE_SIZE);
-    for (; curp < init_mapping[i].p_end; curp += PAGE_SIZE, curv += PAGE_SIZE) {
-      __map_one_page(pgtbl, curv, curp, init_mapping[i].flag);
+  for (int i = 0; i < ARRSIZE(kernel_mapping); ++i) {
+    paddr_t curp = ROUND_DOWN(kernel_mapping[i].p_beg, PAGE_SIZE);
+    vaddr_t curv = ROUND_DOWN(kernel_mapping[i].virt, PAGE_SIZE);
+    for (; curp < kernel_mapping[i].p_end;
+         curp += PAGE_SIZE, curv += PAGE_SIZE) {
+      map_one_page(pgtbl, curv, curp, kernel_mapping[i].flag,
+                   identity_mapping_on);
       ++pgcnt;
     }
   }
+  return pgcnt;
+}
+
+void init_kpgtbl() {
+  int pgcnt;
+
+  ptp_t *pgtbl = (ptp_t *)kzalloc(PAGE_SIZE);
+  pgcnt = set_kmapping(pgtbl, true);
 
   kdebug("[init_kpgtbl] %d pages is mapped\n", pgcnt);
 

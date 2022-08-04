@@ -3,6 +3,7 @@
 #include "common/type.h"
 #include "common/x86.h"
 #include "interrupt/interrupt.h"
+#include "mm/layout.h"
 
 // see https://wiki.osdev.org/APIC
 
@@ -52,11 +53,13 @@
 // masked interrupt will not be sent to CPU
 #define LAPIC_LVT_MASKED (1 << 16)
 
-static inline paddr_t get_lapic_base_addr() {
-  return (paddr_t)rdmsr(LAPIC_BASE_MSR) & LAPIC_BASE_MASK;
+vaddr_t lapic_base;
+
+static inline vaddr_t get_lapic_base_addr() {
+  return P2V(rdmsr(LAPIC_BASE_MSR)) & LAPIC_BASE_MASK;
 }
 
-static inline void lapic_write(paddr_t base, u64 off, u64 size, u64 cont) {
+static inline void lapic_write(vaddr_t base, u64 off, u64 size, u64 cont) {
   switch (size) {
   case 1: *(u8 *)((void *)base + off) = (u8)cont; break;
   case 2: *(u16 *)((void *)base + off) = (u16)cont; break;
@@ -67,7 +70,7 @@ static inline void lapic_write(paddr_t base, u64 off, u64 size, u64 cont) {
   cont = *(u8 *)((void *)base + off);
 }
 
-static inline u64 lapic_read(paddr_t base, u64 off, u64 size) {
+static inline u64 lapic_read(vaddr_t base, u64 off, u64 size) {
   switch (size) {
   case 1: return *(u8 *)((void *)base + off);
   case 2: return *(u16 *)((void *)base + off);
@@ -78,7 +81,7 @@ static inline u64 lapic_read(paddr_t base, u64 off, u64 size) {
 }
 
 void lapic_init() {
-  paddr_t lapic_base = get_lapic_base_addr();
+  lapic_base = get_lapic_base_addr();
 
   // SVT (Section 10.9)
   lapic_write(lapic_base, LAPIC_SVT_REG, 4, SVT_ENABLE | IRQ_SPURIOUS);
@@ -110,3 +113,5 @@ void lapic_init() {
   // Do not block any interrupts, see Section 10.8.3.1
   lapic_write(lapic_base, LAPIC_TP_REG, 4, 0);
 }
+
+void lapic_eoi() { lapic_write(lapic_base, LAPIC_EOI_REG, 4, 0); }

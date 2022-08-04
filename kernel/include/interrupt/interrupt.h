@@ -33,3 +33,6 @@ void lapic_init();
 void idt_init();
 
 void intr_init();
+
+// ack an interrupt
+void lapic_eoi();

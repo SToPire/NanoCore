@@ -2,8 +2,7 @@
 
 #include "type.h"
 
-#define CODE_SEG_SELECTOR (1 << 3);
-#define DATA_SEG_SELECTOR (2 << 3);
+#define EFLAG_IF (1 << 9)
 
 static inline void outb(u16 port, u16 data) {
   asm volatile("out %0,%1" : : "a"(data), "d"(port));
@@ -28,6 +27,20 @@ static inline void lidt(u64 p, int size) {
 
   asm volatile("lidt (%0)" : : "r"(pd));
 }
+
+static inline void lgdt(u64 p, int size) {
+  volatile u16 pd[5];
+
+  pd[0] = size - 1;
+  pd[1] = p;
+  pd[2] = p >> 16;
+  pd[3] = p >> 32;
+  pd[4] = p >> 48;
+
+  asm volatile("lgdt (%0)" : : "r"(pd));
+}
+
+static inline void ltr(u16 sel) { asm volatile("ltr %0" : : "r"(sel)); }
 
 // see https://wiki.osdev.org/Inline_Assembly/Examples
 static inline u64 rdmsr(u64 msr) {

@@ -22,6 +22,7 @@
 
 #define PTE_WRITE   (1 << 0)
 #define PTE_NONEXEC (1 << 1)
+#define PTE_USER    (1 << 2)
 
 typedef union {
   /* L4, L3, L2 page table entry*/
@@ -44,4 +45,8 @@ typedef struct {
   pte_t ent[1 << PAGE_ORDER];
 } ptp_t;
 
+// pgtbl must be a physical address
+void map_one_page(ptp_t *pgtbl, vaddr_t va, paddr_t pa, u32 flag,
+                  bool identity_mapping_on);
+int set_kmapping(ptp_t *pgtbl, bool identity_mapping_on);
 void init_kpgtbl();

@@ -1,5 +1,5 @@
 #include "common/type.h"
-#include "common/uart.h"
+#include "utils/uart.h"
 
 #define PRINTK_BUF_LEN 1024
 
@@ -168,7 +168,7 @@ static int vsprintf(char *str, const char *fmt, va_list ap) {
       case '9': width_now = 10 * width_now + *fmt - '0'; break;
       default:
         for (char *s = "Error in printk!\n", *p = s; *p; ++p)
-          write_serial(*p);
+          uart_write(*p);
       }
       ++fmt;
     } else if (*fmt == '%') {
@@ -195,7 +195,7 @@ int printk(const char *fmt, ...) {
 
   ret = vsprintf(buf, fmt, ap);
   for (char *c = buf; *c; c++)
-    write_serial(*c);
+    uart_write(*c);
 
   va_end(ap);
   return ret;

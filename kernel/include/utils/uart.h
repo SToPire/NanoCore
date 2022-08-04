@@ -4,7 +4,7 @@
 
 #define PORT 0x3F8
 
-static inline int init_serial() {
+static inline int uart_init() {
   outb(PORT + 1, 0x00); // Disable all interrupts
   outb(PORT + 3, 0x80); // Enable DLAB (set baud rate divisor)
   outb(PORT + 0, 0x03); // Set divisor to 3 (lo byte) 38400 baud
@@ -27,13 +27,13 @@ static inline int init_serial() {
   return 0;
 }
 
-static inline char read_serial() {
+static inline char uart_read() {
   while ((inb(PORT + 5) & 1) == 0)
     ;
   return inb(PORT);
 }
 
-static inline void write_serial(char c) {
+static inline void uart_write(char c) {
   while ((inb(PORT + 5) & 0x20) == 0)
     ;
   outb(PORT, c);
