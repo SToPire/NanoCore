@@ -14,6 +14,8 @@ extern struct mem_pool global_mp;
 extern bool is_kpgtbl_set;
 extern int errno;
 
+ptp_t *kpgtbl;
+
 static struct kernel_mapping {
   vaddr_t virt;
   paddr_t p_beg;
@@ -97,11 +99,11 @@ int set_kmapping(ptp_t *pgtbl, bool identity_mapping_on) {
 void init_kpgtbl() {
   int pgcnt;
 
-  ptp_t *pgtbl = (ptp_t *)kzalloc(PAGE_SIZE);
-  pgcnt = set_kmapping(pgtbl, true);
+  kpgtbl = (ptp_t *)kzalloc(PAGE_SIZE);
+  pgcnt = set_kmapping(kpgtbl, true);
 
   kdebug("[init_kpgtbl] %d pages is mapped\n", pgcnt);
 
-  lcr3((paddr_t)pgtbl);
+  lcr3((paddr_t)kpgtbl);
   is_kpgtbl_set = true;
 }

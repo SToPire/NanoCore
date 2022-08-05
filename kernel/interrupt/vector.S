@@ -291,7 +291,9 @@ all_handler_asm_entry:
     mov gs, rax
     mov ss, rax
 
+    mov rdi,rsp
     call exception_handler
+
     jmp iret_from_trapframe
 
 ; this array holds entry address of each vector

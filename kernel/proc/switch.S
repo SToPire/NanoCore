@@ -1,7 +1,7 @@
 section .text
 
-global ret_to_user
 global iret_from_trapframe
+global context_switch
 
 ; %rsp must point to struct trapframe
 iret_from_trapframe:
@@ -34,7 +34,28 @@ iret_from_trapframe:
 
     iretq
 
-; arg1 (in %rdi): %rsp pointer
-ret_to_user:
-  mov rsp, rdi
-  jmp iret_from_trapframe
+; void context_switch(struct context **current, struct context *target)
+context_switch:
+  ; save cur_ctx
+  push r15
+  push r14
+  push r13
+  push r12
+  push rbp
+  push rbx
+
+  ; switch stack
+  mov [rdi], rsp
+  mov rsp, rsi
+
+  ; ret from new ctx
+  pop rbx
+  pop rbp
+  pop r12
+  pop r13
+  pop r14
+  pop r15
+
+  ret
+
+

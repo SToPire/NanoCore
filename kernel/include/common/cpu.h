@@ -1,6 +1,7 @@
 #pragma once
 
 #include "common/x86.h"
+#include "proc/process.h"
 
 #define NCPU      (1)
 #define NGDTENTRY (7)
@@ -73,14 +74,29 @@ struct task_state {
 };
 #pragma pack(pop)
 
+// x86-64 callee saved registers and %rip
+struct context {
+  u64 rbx;
+  u64 rbp;
+  u64 r12;
+  u64 r13;
+  u64 r14;
+  u64 r15;
+
+  // return address is just above ctx
+  u64 rip;
+};
+
 struct cpu {
   struct gdt gdtbl[NGDTENTRY];
   struct task_state ts;
+  struct context *sched_ctx;
+  struct process *cur_proc;
 };
 
 extern struct cpu cpu[NCPU];
 
-static inline struct cpu *mycpu() {
+static inline struct cpu *get_cur_cpu() {
   return &cpu[0]; // TODO: implement me!
 }
 

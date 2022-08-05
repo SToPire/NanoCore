@@ -3,6 +3,7 @@
 #include "interrupt/interrupt.h"
 #include "mm/mm.h"
 #include "proc/process.h"
+#include "proc/schedule.h"
 #include "utils/string.h"
 #include "utils/uart.h"
 
@@ -20,6 +21,7 @@ int main() {
   mm_init();       // init memory management module
   intr_init();     // enable interrupt
   uproc_init();    // init first user process
+  scheduler();     // enter scheduler loop
 
   kdebug("spinning!\n");
   while (1)

@@ -1,12 +1,20 @@
 #include "interrupt/interrupt.h"
 #include "common/cpu.h"
+#include "common/klog.h"
+#include "proc/process.h"
 
 struct idt_gate_desc idt[IRQ_CNT];
 extern void *allvectors[IRQ_CNT];
 
-void exception_handler() {
-  // TODO: implement me!
-  lapic_eoi();
+void exception_handler(struct trap_frame *tf) {
+  switch (tf->trapno) {
+  case IRQ_TIMER:
+    if (get_cur_cpu()->cur_proc && get_cur_cpu()->cur_proc->status == PROC_RUNNING)
+      yield();
+    lapic_eoi();
+    break;
+  default: kerror("[exception handler] unknown irq type=%lu!\n", tf->trapno);
+  }
 }
 
 static inline void set_idt_desc(int index, void *handler) {
