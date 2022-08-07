@@ -31,7 +31,7 @@ void uproc_init() {
   proc_tbl[0] = proc;
   proc->pid = 0;
   proc->parent = proc;
-  proc->status = PROC_RUNNABLE;
+  proc->status = PROC_READY;
   proc->canary = KSTACK_CANARY;
 
   // set trapframe (for iret)
@@ -72,6 +72,6 @@ void yield() {
   struct process *proc = get_cur_proc();
 
   BUG_ON(proc->status != PROC_RUNNING);
-  proc->status = PROC_RUNNABLE;
+  proc->status = PROC_READY;
   enter_schedule();
 }

@@ -11,7 +11,7 @@
 enum proc_stat {
   PROC_INVALID,
   PROC_RUNNING,
-  PROC_RUNNABLE,
+  PROC_READY,
   PROC_SLEEPING,
 };
 

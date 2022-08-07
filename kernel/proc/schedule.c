@@ -17,11 +17,11 @@ void scheduler() {
   while (true) {
     for (int i = 0; i < NPROC; i++) {
       proc = proc_tbl[i];
-      if (proc == NULL || proc->status != PROC_RUNNABLE) continue;
+      if (proc == NULL || proc->status != PROC_READY) continue;
 
       proc->status = PROC_RUNNING;
       cpu->cur_proc = proc;
-      kdebug("[scheduler] choose pid=%d to run.\n", proc->pid);
+      // kdebug("[scheduler] choose pid=%d to run.\n", proc->pid);
       switch_to_uproc(proc);
 
       context_switch(&cpu->sched_ctx, proc->ctx);
