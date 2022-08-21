@@ -2,9 +2,10 @@
 
 #include "common/type.h"
 
-#define IRQ_TIMER    64
-#define IRQ_ERR      254
-#define IRQ_SPURIOUS 255 // see Section 10.9, Vol 3A Part 1.
+#define IRQ_TIMER    0x40
+#define IRQ_SYSCALL  0x80
+#define IRQ_ERR      (0xFF - 1)
+#define IRQ_SPURIOUS 0xFF // see Section 10.9, Vol 3A Part 1.
 
 #define IRQ_CNT 256
 

@@ -31,7 +31,7 @@ u16 in(u16 port) {
 }
 
 // read sector indexed by `sect` from hdd into `addr`.
-void readsect(void *addr, u16 sect) {
+void readsect(void *addr, u32 sect) {
   while ((in(ATA_P_STATUS)&0xC0) != 0x40)
     ;
 
@@ -41,7 +41,7 @@ void readsect(void *addr, u16 sect) {
   out(ATA_P_LBA_LO, sect & 0xFF);
   out(ATA_P_LBA_ME, (sect >> 8) & 0xFF);
   out(ATA_P_LBA_HI, (sect >> 16) & 0xFF);
-  out(ATA_P_DEV, 0xE0 | ((sect >> 24) & 0xFF));
+  out(ATA_P_DEV, 0xE0 | ((sect >> 24) & 0xF));
   out(ATA_P_CMD, ATA_READ_SECT_CMD);
 
   while ((in(ATA_P_STATUS)&0xC0) != 0x40)
@@ -54,8 +54,8 @@ void readsect(void *addr, u16 sect) {
 }
 
 // read `cnt` sectors indexed by `sect` from hdd into `addr`.
-void readsectn(void *addr, u16 sect, u16 cnt) {
+void readsectn(void *addr, u32 sect, u8 cnt) {
   void *p = addr;
-  for (u16 esect = sect + cnt; sect < esect; ++sect, p += SECTOR_SIZE)
+  for (u32 esect = sect + cnt; sect < esect; ++sect, p += SECTOR_SIZE)
     readsect(p, sect);
 }

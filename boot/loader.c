@@ -6,7 +6,7 @@
 
 #define ROUND_UP(n, base) ((n + base - 1) / base)
 
-void readsectn(void *addr, u16 sect, u16 cnt);
+void readsectn(void *addr, u32 sect, u8 cnt);
 void map_kernel(); // defined in loader.S
 
 void memset(void *addr, u8 val, u32 cnt) {

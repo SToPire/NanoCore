@@ -1,9 +1,12 @@
 #include "proc/process.h"
 #include "common/cpu.h"
+#include "common/elf.h"
 #include "common/errno.h"
 #include "common/klog.h"
+#include "common/macro.h"
 #include "common/type.h"
 #include "common/x86.h"
+#include "fs/tarfs.h"
 #include "mm/layout.h"
 #include "mm/mm.h"
 #include "mm/mmu.h"
@@ -18,6 +21,13 @@ void switch_to_uproc(struct process *proc) {
   get_cur_cpu()->ts.rsp0 = (u64)proc + PAGE_SIZE;
   lcr3((paddr_t)proc->pgtbl);
 }
+
+u8 init_code[] = {
+    0xBF, 0x01, 0x00, 0x00, 0x00, // mov rdi, 0x1
+    0xBE, 0x0C, 0x00, 0x10, 0x00, // mov rsi, %str
+    0xCD, 0x80,                   // int 0x80
+    0x2F, 0x69, 0x6E, 0x69, 0x74, // str: "/init"
+};
 
 void uproc_init() {
   vaddr_t kpage;
@@ -51,8 +61,8 @@ void uproc_init() {
   map_one_page(proc->pgtbl, USER_CODE_START, upage, PTE_USER | PTE_WRITE,
                false);
 
-  // TODO: remove me!
-  *(u16 *)P2V(upage) = 0xfeeb;
+  for (int i = 0; i < sizeof(init_code); i++)
+    *(u8 *)P2V(upage + i) = init_code[i];
 
   // set context
   sp -= sizeof(struct context);
@@ -74,4 +84,19 @@ void yield() {
   BUG_ON(proc->status != PROC_RUNNING);
   proc->status = PROC_READY;
   enter_schedule();
+}
+
+void exec(const char *path) {
+  int ret;
+  struct elf_header *elf_hdr;
+  vaddr_t buf = P2V(kalloc(4 * PAGE_SIZE));
+
+  ret = tarfs_read(path, 0, sizeof(struct elf_header), (void *)buf);
+  BUG_ON(ret < 0);
+
+  elf_hdr = (struct elf_header*)buf;
+  kinfo("elf->ph_num=%u\n",elf_hdr->e_phnum);
+
+  while (1)
+    ;
 }

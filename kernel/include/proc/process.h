@@ -30,3 +30,4 @@ void uproc_init();
 
 struct process *get_cur_proc();
 void yield();
+void exec(const char* path);

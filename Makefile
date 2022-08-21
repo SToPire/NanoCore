@@ -1,6 +1,7 @@
 BOOTDIR = $(shell pwd)/boot
 export KDIR = $(shell pwd)/kernel
 export BUILDDIR = $(shell pwd)/build
+export UDIR = $(shell pwd)/user
 
 export CFLAGS = -fPIC -fno-strict-aliasing -O2 -Wall -ggdb -ffreestanding -nostdinc 
 CFLAGS += -fno-omit-frame-pointer -fno-stack-protector
@@ -10,9 +11,11 @@ CFLAGS += -mno-red-zone -mno-mmx -mno-sse -mno-sse2
 CFLAGS += -DLOG_LEVEL=2
 
 export ASFLAGS = -f elf64 -F dwarf -g
-LDFLAGS = -m elf_x86_64 --no-relax
+export LDFLAGS = -m elf_x86_64 --no-relax
 
-QEMU = qemu-system-x86_64 -nographic -serial mon:stdio -m 512
+QEMU = qemu-system-x86_64 -nographic -serial mon:stdio -m 512 \
+				-drive file=$(BUILDDIR)/hd.img,format=raw \
+				-drive file=$(BUILDDIR)/user/tarfs.img,format=raw \
 
 KCOBJS = $(shell find $(KDIR) -name "*.c" \
 | sed -r 's|$(KDIR).*/|$(BUILDDIR)/|g' \
@@ -29,7 +32,7 @@ KSUBDIRS := $(wildcard $(KDIR)/*/.)
 build:
 	docker run -it --rm -u $(shell id -u ${USER}):$(shell id -g ${USER}) -v $(shell pwd):/sos -w /sos stopire/sos-builder:v1 make docker-build
 
-docker-build: $(BUILDDIR)/hd.img
+docker-build: kernel user
 
 $(BUILDDIR)/mbr: $(BOOTDIR)/mbr.S $(BOOTDIR)/mbr.c
 	mkdir -p $(BUILDDIR)
@@ -39,7 +42,7 @@ $(BUILDDIR)/mbr: $(BOOTDIR)/mbr.S $(BOOTDIR)/mbr.c
 	objcopy -S -O binary -j .text $(BUILDDIR)/mbr.o $@
 	dd if=/dev/null of=$@ bs=1 seek=510
 # override shell built-in command 'printf'	
-	/usr/bin/printf '\x55\xAA' >> $(BUILDDIR)/mbr
+	/usr/bin/printf '\x55\xAA' >> $@
 
 $(BUILDDIR)/loader: $(BOOTDIR)/loader.S $(BOOTDIR)/loader.c
 	nasm $(ASFLAGS) -i $(BOOTDIR)/include $(BOOTDIR)/loader.S -o $(BUILDDIR)/loader.S.o
@@ -55,16 +58,22 @@ $(BUILDDIR)/kernel: $(KSUBDIRS)
 $(KSUBDIRS): 
 	$(MAKE) -f $(KDIR)/Makefile -C $@
 
-$(BUILDDIR)/hd.img: $(BUILDDIR)/mbr $(BUILDDIR)/loader $(BUILDDIR)/kernel
+bootloader: $(BUILDDIR)/mbr $(BUILDDIR)/loader
+
+kernel: bootloader $(BUILDDIR)/kernel
 	dd if=$(BUILDDIR)/mbr of=$(BUILDDIR)/hd.img bs=512 count=1 conv=notrunc
 	dd if=$(BUILDDIR)/loader of=$(BUILDDIR)/hd.img bs=512 seek=1 conv=notrunc
 	dd if=$(BUILDDIR)/kernel of=$(BUILDDIR)/hd.img bs=512 seek=2 conv=notrunc
 
+user:
+	mkdir -p $(BUILDDIR)/user/bin
+	$(MAKE) -f $(UDIR)/Makefile -C $(UDIR)
+
 qemu: 
-	$(QEMU) -drive file=$(BUILDDIR)/hd.img,format=raw
+	$(QEMU)
 
 qemu-gdb: 
-	$(QEMU) -drive file=$(BUILDDIR)/hd.img,format=raw -S -gdb tcp::6789
+	$(QEMU) -S -gdb tcp::6789
 
 gen-builder:
 	docker build -t sos-builder --network=host .
@@ -77,4 +86,4 @@ compile-commands:
 clean:
 	rm -rf $(BUILDDIR)
 
-.PHONY: build clean gen-builder $(KSUBDIRS)
+.PHONY: build clean gen-builder user $(KSUBDIRS)

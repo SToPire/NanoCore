@@ -3,7 +3,7 @@
  */
 #include "include/ata.h"
 
-void readsectn(void *addr, u16 sect, u16 cnt);
+void readsectn(void *addr, u32 sect, u8 cnt);
 
 void mbr_c_entry() {
   readsect((void *)LOADER_MEMORY_LOCATION, LOADER_SECTOR);

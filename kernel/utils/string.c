@@ -1,5 +1,5 @@
 #include "common/type.h"
-#include "utils/uart.h"
+#include "dev/uart.h"
 
 #define PRINTK_BUF_LEN 1024
 
