@@ -1,6 +1,5 @@
 #include "common/cpu.h"
 #include "common/klog.h"
-#include "dev/ata.h"
 #include "dev/uart.h"
 #include "fs/tarfs.h"
 #include "interrupt/interrupt.h"

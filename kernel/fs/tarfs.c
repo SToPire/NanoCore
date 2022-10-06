@@ -51,4 +51,6 @@ int tarfs_read(const char *path, size_t off, int len, void *buf) {
     ptr += ROUND_UP(size, TAR_ALIGNMENT); // skip file data
     tar_hdr = (struct tar_header *)ptr;
   }
+
+  return -EINVAL;
 }
