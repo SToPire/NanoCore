@@ -5,7 +5,7 @@ global context_switch
 
 ; %rsp must point to struct trapframe
 iret_from_trapframe:
-    ; get ss, user it to recover other seg reg
+    ; get ss, use it to recover other seg reg
     ; ss itself will be recover in iretq
     mov rax, [rsp + (0x8 * (15 + 2 + 4))]
     mov ds, rax
