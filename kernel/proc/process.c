@@ -51,6 +51,7 @@ void uproc_init() {
   proc->tf->cs = UCODE_SEG_SELECTOR;
   proc->tf->ss = UDATA_SEG_SELECTOR;
   proc->tf->rip = USER_CODE_START;
+  // TODO: give a separate user stack
   proc->tf->rsp = USER_CODE_START + PAGE_SIZE;
   proc->tf->eflags = EFLAG_IF;
 
@@ -86,17 +87,54 @@ void yield() {
   enter_schedule();
 }
 
+u32 elf_flag2perm(u32 flag) {
+  u32 perm = 0;
+  if (flag & PF_W) perm |= PTE_WRITE;
+  if (!(flag & PF_X)) perm |= PTE_NONEXEC;
+
+  return perm;
+}
+
 void exec(const char *path) {
   int ret;
   struct elf_header *elf_hdr;
+  struct elf_program_header *phdr;
+  struct process *proc = get_cur_proc();
+  vaddr_t va;
+  paddr_t pa;
+
   vaddr_t buf = P2V(kalloc(4 * PAGE_SIZE));
 
   ret = tarfs_read(path, 0, sizeof(struct elf_header), (void *)buf);
   BUG_ON(ret < 0);
 
-  elf_hdr = (struct elf_header*)buf;
-  kinfo("elf->ph_num=%u\n",elf_hdr->e_phnum);
+  elf_hdr = (struct elf_header *)buf;
+  phdr = (struct elf_program_header *)(buf + sizeof(struct elf_header));
 
-  while (1)
-    ;
+  for (u16 i = 0; i < elf_hdr->e_phnum; ++i) {
+    ret = tarfs_read(path, elf_hdr->e_phoff + i * elf_hdr->e_phentsize,
+                     elf_hdr->e_phentsize, phdr);
+    BUG_ON(ret < 0);
+
+    if (phdr->p_type != PT_LOAD) continue;
+
+    kdebug(
+        "loading segment: vaddr=0x%lx, memsz=0x%lx, filesz=0x%lx, perm=0x%x\n",
+        phdr->p_vaddr, phdr->p_memsz, phdr->p_filesz, phdr->p_flags);
+
+    // TODO: free old user page here
+    // TODO: Use CoW
+    pa = kzalloc(ROUND_UP(phdr->p_memsz, PAGE_SIZE));
+    ret = tarfs_read(path, phdr->p_offset, phdr->p_filesz, (void *)P2V(pa));
+    BUG_ON(ret < 0);
+    memset((void *)P2V(pa) + phdr->p_filesz, 0, phdr->p_memsz - phdr->p_filesz);
+
+    for (va = phdr->p_vaddr; va < phdr->p_vaddr + phdr->p_memsz;
+         va += PAGE_SIZE, pa += PAGE_SIZE) {
+      map_one_page(proc->pgtbl, va, pa, PTE_USER | elf_flag2perm(phdr->p_flags),
+                   false);
+          }
+  }
+  lcr3((paddr_t)proc->pgtbl);
+  proc->tf->rip = elf_hdr->e_entry;
 }

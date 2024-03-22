@@ -4,6 +4,13 @@
 
 #define ELF_MAGIC 0x464C457FU
 
+#define PT_NULL 0
+#define PT_LOAD 1
+
+#define PF_X 1
+#define PF_W 2
+#define PF_R 4
+
 struct elf_header {
   u32 e_magic;
   u8 e_indent[12];

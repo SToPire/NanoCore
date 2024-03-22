@@ -8,7 +8,7 @@ tarfs: $(UPROG)
 	for f in `ls $(BUILDDIR)/user/bin`; do \
 		mv "$(BUILDDIR)/user/bin/$$f" "$(BUILDDIR)/user/bin/`echo $$f | sed 's/u_//g'`" ; \
 	done
-#	generate tar archive	
+# generate tar archive	
 	tar cf $(BUILDDIR)/user/tarfs.img -C $(BUILDDIR)/user/bin/ `ls $(BUILDDIR)/user/bin`
 # align tarfs.img to 16 sectors
 	dd if=/dev/null of=$(BUILDDIR)/user/tarfs.img bs=512 seek=16

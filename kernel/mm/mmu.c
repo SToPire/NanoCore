@@ -51,14 +51,12 @@ void map_one_page(ptp_t *pgtbl, vaddr_t va, paddr_t pa, u32 flag,
     }
 
     if (l == 1) {
-      if (!ptp->ent[index].pte.is_valid) {
-        ptp->ent[index].pte.is_valid = 1;
-        ptp->ent[index].pte.is_user = flag & PTE_USER ? 1 : 0;
-        ptp->ent[index].pte.is_writeable = flag & PTE_WRITE ? 1 : 0;
-        ptp->ent[index].pte.non_execute = flag & PTE_NONEXEC ? 1 : 0;
+      ptp->ent[index].pte.is_valid = 1;
+      ptp->ent[index].pte.is_user = flag & PTE_USER ? 1 : 0;
+      ptp->ent[index].pte.is_writeable = flag & PTE_WRITE ? 1 : 0;
+      ptp->ent[index].pte.non_execute = flag & PTE_NONEXEC ? 1 : 0;
 
-        ptp->ent[index].pte.paddr = GET_PTE_ADDR(pa);
-      }
+      ptp->ent[index].pte.paddr = GET_PTE_ADDR(pa);
     } else {
       if (!ptp->ent[index].pde.is_valid) {
         ptp->ent[index].pde.is_valid = 1;
