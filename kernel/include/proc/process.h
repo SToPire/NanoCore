@@ -4,6 +4,7 @@
 #include "common/type.h"
 #include "common/x86.h"
 #include "mm/mmu.h"
+#include "vm.h"
 
 #define NPROC         (64)
 #define KSTACK_CANARY (0x2333)
@@ -19,8 +20,9 @@ struct process {
   enum proc_stat status;
   struct process *parent;
   struct trap_frame *tf;
+  struct mm_struct mm;
   struct context *ctx;
-  ptp_t* pgtbl;
+  ptp_t *pgtbl;
   u16 pid;
   u16 canary;
 };
@@ -30,4 +32,4 @@ void uproc_init();
 
 struct process *get_cur_proc();
 void yield();
-void exec(const char* path);
+void exec(const char *path);

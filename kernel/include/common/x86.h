@@ -26,6 +26,12 @@ static inline u16 inw(u16 port) {
 
 static inline void lcr3(u64 val) { asm volatile("movq %0,%%cr3" : : "r"(val)); }
 
+static inline u64 rcr2(void) {
+  u64 val;
+  asm volatile("movq %%cr2,%0" : "=r"(val));
+  return val;
+}
+
 static inline void lidt(u64 p, int size) {
   volatile u16 pd[5];
 

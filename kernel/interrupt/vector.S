@@ -1,4 +1,12 @@
+; Not all exceptions push an error code onto the stack
+; see Section 6.13, Vol 3A Part 1 
 %macro vector 1
+vector%+%1:
+    push %1     ; trapno
+    jmp all_handler_asm_entry
+%endmacro
+
+%macro no_hwerr_vector 1
 vector%+%1:
     push 0x0    ; errno
     push %1     ; trapno
@@ -73,7 +81,7 @@ vector 60
 vector 61
 vector 62
 vector 63
-vector 64
+no_hwerr_vector 64 ; timer interrupt will not push an error code
 vector 65
 vector 66
 vector 67
@@ -137,7 +145,7 @@ vector 124
 vector 125
 vector 126
 vector 127
-vector 128
+no_hwerr_vector 128 ; int 0x80 will not push an error code
 vector 129
 vector 130
 vector 131

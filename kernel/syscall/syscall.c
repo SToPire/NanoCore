@@ -1,6 +1,7 @@
 #include "syscall/syscall.h"
 #include "common/klog.h"
 #include "common/type.h"
+#include "proc/process.h"
 
 typedef u64 (*syscall_func_t)(u64 arg1, u64 arg2, u64 arg3, u64 arg4, u64 arg5);
 syscall_func_t syscall_table[N_SYSCALL] = {

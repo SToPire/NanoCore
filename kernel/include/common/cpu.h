@@ -1,7 +1,6 @@
 #pragma once
 
 #include "common/x86.h"
-#include "proc/process.h"
 
 #define NCPU      (1)
 #define NGDTENTRY (7)

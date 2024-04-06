@@ -2,6 +2,7 @@
 #include "common/cpu.h"
 #include "common/klog.h"
 #include "proc/process.h"
+#include "proc/vm.h"
 #include "syscall/syscall.h"
 
 struct idt_gate_desc idt[IRQ_CNT];
@@ -15,10 +16,13 @@ void exception_handler(struct trap_frame *tf) {
       yield();
     lapic_eoi();
     break;
-  case IRQ_SYSCALL:
-    syscall_entry(tf);
-    break;
-  default: kerror("[exception handler] unknown irq type=%lu!\n", tf->trapno);
+  case IRQ_SYSCALL: syscall_entry(tf); break;
+  case IRQ_PF: pagefault_handler(tf); break;
+  default:
+    kerror("[exception handler] unknown irq type=%lu errno=%lu\n", tf->trapno,
+           tf->errno);
+    while (1)
+      ;
   }
 }
 

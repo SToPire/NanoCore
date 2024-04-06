@@ -11,6 +11,8 @@
 #include "mm/mm.h"
 #include "mm/mmu.h"
 #include "proc/schedule.h"
+#include "proc/vm.h"
+#include "utils/list.h"
 #include "utils/util.h"
 
 struct process *proc_tbl[NPROC];
@@ -43,6 +45,7 @@ void uproc_init() {
   proc->parent = proc;
   proc->status = PROC_READY;
   proc->canary = KSTACK_CANARY;
+  init_mm_struct(&proc->mm);
 
   // set trapframe (for iret)
   sp = kpage + PAGE_SIZE;
@@ -52,15 +55,22 @@ void uproc_init() {
   proc->tf->ss = UDATA_SEG_SELECTOR;
   proc->tf->rip = USER_CODE_START;
   // TODO: give a separate user stack
-  proc->tf->rsp = USER_CODE_START + PAGE_SIZE;
+  proc->tf->rsp = USER_STACK_END;
   proc->tf->eflags = EFLAG_IF;
 
   // set upgtbl
   proc->pgtbl = (ptp_t *)kzalloc(PAGE_SIZE);
   set_kmapping(proc->pgtbl, false);
   upage = kzalloc(PAGE_SIZE);
+
+  // manually map user code of the first user process
   map_one_page(proc->pgtbl, USER_CODE_START, upage, PTE_USER | PTE_WRITE,
                false);
+
+  add_vma(&proc->mm, USER_CODE_START, USER_CODE_START + PAGE_SIZE,
+          VM_READ | VM_WRITE | VM_EXEC | VM_USER);
+  add_vma(&proc->mm, USER_STACK_START, USER_STACK_END,
+          VM_READ | VM_WRITE | VM_USER);
 
   for (int i = 0; i < sizeof(init_code); i++)
     *(u8 *)P2V(upage + i) = init_code[i];
@@ -95,14 +105,22 @@ u32 elf_flag2perm(u32 flag) {
   return perm;
 }
 
+u64 elf_flag2vm(u32 flag) {
+  u64 vm = VM_READ;
+  if (flag & PF_W) vm |= VM_WRITE;
+  if (flag & PF_X) vm |= VM_EXEC;
+
+  return vm;
+}
+
 void exec(const char *path) {
   int ret;
   struct elf_header *elf_hdr;
   struct elf_program_header *phdr;
+  struct vm_area_struct *vma;
   struct process *proc = get_cur_proc();
   vaddr_t va;
   paddr_t pa;
-
   vaddr_t buf = P2V(kalloc(4 * PAGE_SIZE));
 
   ret = tarfs_read(path, 0, sizeof(struct elf_header), (void *)buf);
@@ -118,23 +136,32 @@ void exec(const char *path) {
 
     if (phdr->p_type != PT_LOAD) continue;
 
-    kdebug(
-        "loading segment: vaddr=0x%lx, memsz=0x%lx, filesz=0x%lx, perm=0x%x\n",
-        phdr->p_vaddr, phdr->p_memsz, phdr->p_filesz, phdr->p_flags);
+    kdebug("[exec] loading segment: vaddr=0x%lx, memsz=0x%lx, filesz=0x%lx, "
+           "perm=0x%x\n",
+           phdr->p_vaddr, phdr->p_memsz, phdr->p_filesz, phdr->p_flags);
 
-    // TODO: free old user page here
+    // TODO: free first user page here ?
     // TODO: Use CoW
     pa = kzalloc(ROUND_UP(phdr->p_memsz, PAGE_SIZE));
     ret = tarfs_read(path, phdr->p_offset, phdr->p_filesz, (void *)P2V(pa));
     BUG_ON(ret < 0);
     memset((void *)P2V(pa) + phdr->p_filesz, 0, phdr->p_memsz - phdr->p_filesz);
 
-    for (va = phdr->p_vaddr; va < phdr->p_vaddr + phdr->p_memsz;
-         va += PAGE_SIZE, pa += PAGE_SIZE) {
+    for (va = ROUND_DOWN(phdr->p_vaddr, PAGE_SIZE);
+         va < phdr->p_vaddr + phdr->p_memsz; va += PAGE_SIZE, pa += PAGE_SIZE) {
       map_one_page(proc->pgtbl, va, pa, PTE_USER | elf_flag2perm(phdr->p_flags),
                    false);
-          }
+    }
+    add_vma(&proc->mm, ROUND_DOWN(phdr->p_vaddr, PAGE_SIZE),
+            ROUND_UP(phdr->p_vaddr + phdr->p_memsz, PAGE_SIZE),
+            VM_USER | elf_flag2vm(phdr->p_flags));
   }
+
+  for_each_in_list(vma, struct vm_area_struct, list, &proc->mm.mmap_list) {
+    kdebug("[exec] vma: 0x%lx - 0x%lx, flags=0x%lx\n", vma->start, vma->end,
+           vma->flags);
+  }
+
   lcr3((paddr_t)proc->pgtbl);
   proc->tf->rip = elf_hdr->e_entry;
 }

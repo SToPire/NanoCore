@@ -2,6 +2,7 @@
 
 #include "common/type.h"
 
+#define IRQ_PF       0xE
 #define IRQ_TIMER    0x40
 #define IRQ_SYSCALL  0x80
 #define IRQ_ERR      (0xFF - 1)
