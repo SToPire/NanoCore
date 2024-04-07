@@ -4,10 +4,10 @@
 #include "common/type.h"
 #include "utils/list.h"
 
-#define VM_READ  0x1
+#define VM_READ 0x1
 #define VM_WRITE 0x2
-#define VM_EXEC  0x4
-#define VM_USER  0x8
+#define VM_EXEC 0x4
+#define VM_USER 0x8
 
 struct vm_area_struct {
   u64 start;
@@ -37,11 +37,12 @@ struct pf_error {
       u32 sgx : 1;
       u32 padding2 : 16;
     };
+
     u32 val;
   };
 };
 
-void init_mm_struct(struct mm_struct *mm);
-void add_vma(struct mm_struct *mm, vaddr_t start, vaddr_t end, u64 flags);
+void init_mm_struct(struct mm_struct* mm);
+void add_vma(struct mm_struct* mm, vaddr_t start, vaddr_t end, u64 flags);
 
-void pagefault_handler(struct trap_frame *tf);
+void pagefault_handler(struct trap_frame* tf);

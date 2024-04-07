@@ -7,18 +7,21 @@
 #include "mm/mmu.h"
 #include "proc/process.h"
 
-void init_mm_struct(struct mm_struct *mm) { init_list_head(&mm->mmap_list); }
+void init_mm_struct(struct mm_struct* mm) {
+  init_list_head(&mm->mmap_list);
+}
 
-void add_vma(struct mm_struct *mm, vaddr_t start, vaddr_t end, u64 flags) {
+void add_vma(struct mm_struct* mm, vaddr_t start, vaddr_t end, u64 flags) {
   struct vm_area_struct *vma, *n;
-  struct list_head *prev = &mm->mmap_list;
+  struct list_head* prev = &mm->mmap_list;
 
   for_each_in_list_safe(vma, n, struct vm_area_struct, list, &mm->mmap_list) {
     if (vma->end <= start) {
       prev = &vma->list;
       continue;
     }
-    if (vma->start >= end) break;
+    if (vma->start >= end)
+      break;
 
     if (start <= vma->start && end >= vma->end) {
       // new area covers the old one
@@ -29,10 +32,10 @@ void add_vma(struct mm_struct *mm, vaddr_t start, vaddr_t end, u64 flags) {
 
     if (start > vma->start && end < vma->end) {
       // new area is inside the old one
-      struct vm_area_struct *mid_vma =
-          (struct vm_area_struct *)P2V(kalloc(sizeof(struct vm_area_struct)));
-      struct vm_area_struct *end_vma =
-          (struct vm_area_struct *)P2V(kalloc(sizeof(struct vm_area_struct)));
+      struct vm_area_struct* mid_vma =
+          (struct vm_area_struct*)P2V(kalloc(sizeof(struct vm_area_struct)));
+      struct vm_area_struct* end_vma =
+          (struct vm_area_struct*)P2V(kalloc(sizeof(struct vm_area_struct)));
 
       mid_vma->start = start;
       mid_vma->end = end;
@@ -65,18 +68,19 @@ void add_vma(struct mm_struct *mm, vaddr_t start, vaddr_t end, u64 flags) {
     return;
   }
 
-  vma = (struct vm_area_struct *)P2V(kalloc(sizeof(struct vm_area_struct)));
+  vma = (struct vm_area_struct*)P2V(kalloc(sizeof(struct vm_area_struct)));
   vma->start = start;
   vma->end = end;
   vma->flags = flags;
   list_add(prev, &vma->list);
 }
 
-struct vm_area_struct *find_vma(struct mm_struct *mm, vaddr_t addr) {
-  struct vm_area_struct *vma;
+struct vm_area_struct* find_vma(struct mm_struct* mm, vaddr_t addr) {
+  struct vm_area_struct* vma;
 
   for_each_in_list(vma, struct vm_area_struct, list, &mm->mmap_list) {
-    if (addr >= vma->start && addr < vma->end) return vma;
+    if (addr >= vma->start && addr < vma->end)
+      return vma;
   }
 
   return NULL;
@@ -85,17 +89,20 @@ struct vm_area_struct *find_vma(struct mm_struct *mm, vaddr_t addr) {
 u32 vma_flags_to_pte_flags(u64 flags) {
   u32 pte_flags = 0;
 
-  if (flags & VM_WRITE) pte_flags |= PTE_WRITE;
-  if (!(flags & VM_EXEC)) pte_flags |= PTE_NONEXEC;
-  if (flags & VM_USER) pte_flags |= PTE_USER;
+  if (flags & VM_WRITE)
+    pte_flags |= PTE_WRITE;
+  if (!(flags & VM_EXEC))
+    pte_flags |= PTE_NONEXEC;
+  if (flags & VM_USER)
+    pte_flags |= PTE_USER;
 
   return pte_flags;
 }
 
-void pagefault_handler(struct trap_frame *tf) {
-  struct vm_area_struct *vma;
-  struct pf_error *err;
-  struct process *proc = get_cur_proc();
+void pagefault_handler(struct trap_frame* tf) {
+  struct vm_area_struct* vma;
+  struct pf_error* err;
+  struct process* proc = get_cur_proc();
   vaddr_t va;
   paddr_t pa;
   u32 flags;
@@ -106,7 +113,7 @@ void pagefault_handler(struct trap_frame *tf) {
   }
 
   va = rcr2();
-  err = (struct pf_error *)&tf->errno;
+  err = (struct pf_error*)&tf->errno;
 
   vma = find_vma(&proc->mm, va);
   if (!vma) {

@@ -28,7 +28,7 @@ void gdt_init(int cpuid) {
                                      (tss_base >> 24) & 0xFF};
 
   // tss_hi
-  *(u64 *)(&cpu[cpuid].gdtbl[6]) = (tss_base >> 32) & 0xFFFFFFFF;
+  *(u64*)(&cpu[cpuid].gdtbl[6]) = (tss_base >> 32) & 0xFFFFFFFF;
 
   lgdt((u64)&cpu[cpuid].gdtbl, NGDTENTRY * sizeof(struct gdt));
 }

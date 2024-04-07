@@ -6,28 +6,32 @@
 #include "syscall/syscall.h"
 
 struct idt_gate_desc idt[IRQ_CNT];
-extern void *allvectors[IRQ_CNT];
+extern void* allvectors[IRQ_CNT];
 
-void exception_handler(struct trap_frame *tf) {
+void exception_handler(struct trap_frame* tf) {
   switch (tf->trapno) {
-  case IRQ_TIMER:
-    if (get_cur_cpu()->cur_proc &&
-        get_cur_cpu()->cur_proc->status == PROC_RUNNING)
-      yield();
-    lapic_eoi();
-    break;
-  case IRQ_SYSCALL: syscall_entry(tf); break;
-  case IRQ_PF: pagefault_handler(tf); break;
-  default:
-    kerror("[exception handler] unknown irq type=%lu errno=%lu\n", tf->trapno,
-           tf->errno);
-    while (1)
-      ;
+    case IRQ_TIMER:
+      if (get_cur_cpu()->cur_proc &&
+          get_cur_cpu()->cur_proc->status == PROC_RUNNING)
+        yield();
+      lapic_eoi();
+      break;
+    case IRQ_SYSCALL:
+      syscall_entry(tf);
+      break;
+    case IRQ_PF:
+      pagefault_handler(tf);
+      break;
+    default:
+      kerror("[exception handler] unknown irq type=%lu errno=%lu\n", tf->trapno,
+             tf->errno);
+      while (1)
+        ;
   }
 }
 
-static inline void set_idt_desc(int index, void *handler, u8 dpl) {
-  struct idt_gate_desc *idt_desc = &idt[index];
+static inline void set_idt_desc(int index, void* handler, u8 dpl) {
+  struct idt_gate_desc* idt_desc = &idt[index];
 
   idt_desc->dpl = dpl;
   idt_desc->present = 1;

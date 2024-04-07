@@ -24,7 +24,9 @@ static inline u16 inw(u16 port) {
   return data;
 }
 
-static inline void lcr3(u64 val) { asm volatile("movq %0,%%cr3" : : "r"(val)); }
+static inline void lcr3(u64 val) {
+  asm volatile("movq %0,%%cr3" : : "r"(val));
+}
 
 static inline u64 rcr2(void) {
   u64 val;
@@ -56,7 +58,9 @@ static inline void lgdt(u64 p, int size) {
   asm volatile("lgdt (%0)" : : "r"(pd));
 }
 
-static inline void ltr(u16 sel) { asm volatile("ltr %0" : : "r"(sel)); }
+static inline void ltr(u16 sel) {
+  asm volatile("ltr %0" : : "r"(sel));
+}
 
 // see https://wiki.osdev.org/Inline_Assembly/Examples
 static inline u64 rdmsr(u64 msr) {
@@ -71,6 +75,10 @@ static inline void wrmsr(u64 msr, u64 value) {
   asm volatile("wrmsr" : : "c"(msr), "a"(low), "d"(high));
 }
 
-static inline void cli(void) { asm volatile("cli"); }
+static inline void cli(void) {
+  asm volatile("cli");
+}
 
-static inline void sti(void) { asm volatile("sti"); }
+static inline void sti(void) {
+  asm volatile("sti");
+}

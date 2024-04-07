@@ -27,4 +27,4 @@ struct tar_header {
 #define TARFS_SECTCNT (16)
 
 void tarfs_init();
-int tarfs_read(const char *path, size_t off, int len, void *buf);
+int tarfs_read(const char* path, size_t off, int len, void* buf);

@@ -2,14 +2,14 @@
 
 #include "common/x86.h"
 
-#define NCPU      (1)
+#define NCPU (1)
 #define NGDTENTRY (7)
 
 #define KCODE_SEG_SELECTOR (1 << 3)
 #define KDATA_SEG_SELECTOR (2 << 3)
 #define UCODE_SEG_SELECTOR ((3 << 3) | 0x3)
 #define UDATA_SEG_SELECTOR ((4 << 3) | 0x3)
-#define TASK_SEG_SELECTOR  (5 << 3)
+#define TASK_SEG_SELECTOR (5 << 3)
 
 // In 64-bit mode, the Base and Limit values are ignored.
 struct gdt {
@@ -17,7 +17,7 @@ struct gdt {
   u16 base_lo;
   u8 base_mi;
   u8 access_byte;
-  u8 flags; // flags | limit[19:16]
+  u8 flags;  // flags | limit[19:16]
   u8 base_hi;
 };
 
@@ -44,16 +44,17 @@ struct trap_frame {
 
   // below are defined by x86_64 hardware
   u64 rip;
-  u64 cs;     // only 16 bits valid
-  u64 eflags; // only 32 bits valid
+  u64 cs;      // only 16 bits valid
+  u64 eflags;  // only 32 bits valid
   u64 rsp;
-  u64 ss; // only 16 bits valid
+  u64 ss;  // only 16 bits valid
 };
 
 /*
   We must prevent compiler from padding rsp0 to 8 bytes boudary!
 */
 #pragma pack(push, 1)
+
 struct task_state {
   u32 pad1;
   u64 rsp0;
@@ -71,6 +72,7 @@ struct task_state {
   u16 pad4;
   u16 iopb;
 };
+
 #pragma pack(pop)
 
 // x86-64 callee saved registers and %rip
@@ -89,14 +91,14 @@ struct context {
 struct cpu {
   struct gdt gdtbl[NGDTENTRY];
   struct task_state ts;
-  struct context *sched_ctx;
-  struct process *cur_proc;
+  struct context* sched_ctx;
+  struct process* cur_proc;
 };
 
 extern struct cpu cpu[NCPU];
 
-static inline struct cpu *get_cur_cpu() {
-  return &cpu[0]; // TODO: implement me!
+static inline struct cpu* get_cur_cpu() {
+  return &cpu[0];  // TODO: implement me!
 }
 
 void cpu_init();

@@ -6,7 +6,7 @@
 #include "mm/mmu.h"
 #include "vm.h"
 
-#define NPROC         (64)
+#define NPROC (64)
 #define KSTACK_CANARY (0x2333)
 
 enum proc_stat {
@@ -18,18 +18,18 @@ enum proc_stat {
 
 struct process {
   enum proc_stat status;
-  struct process *parent;
-  struct trap_frame *tf;
+  struct process* parent;
+  struct trap_frame* tf;
   struct mm_struct mm;
-  struct context *ctx;
-  ptp_t *pgtbl;
+  struct context* ctx;
+  ptp_t* pgtbl;
   u16 pid;
   u16 canary;
 };
 
-void switch_to_uproc(struct process *proc);
+void switch_to_uproc(struct process* proc);
 void uproc_init();
 
-struct process *get_cur_proc();
+struct process* get_cur_proc();
 void yield();
-void exec(const char *path);
+void exec(const char* path);

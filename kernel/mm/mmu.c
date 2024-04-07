@@ -14,7 +14,7 @@ extern struct mem_pool global_mp;
 extern bool is_kpgtbl_set;
 extern int errno;
 
-ptp_t *kpgtbl;
+ptp_t* kpgtbl;
 
 static struct kernel_mapping {
   vaddr_t virt;
@@ -32,22 +32,32 @@ static struct kernel_mapping {
     {P2V(0xF0000000), 0xF0000000, 0x100000000, PTE_WRITE | PTE_NONEXEC},
 };
 
-void map_one_page(ptp_t *pgtbl, vaddr_t va, paddr_t pa, u32 flag,
+void map_one_page(ptp_t* pgtbl, vaddr_t va, paddr_t pa, u32 flag,
                   bool identity_mapping_on) {
-  ptp_t *ptp = pgtbl;
+  ptp_t* ptp = pgtbl;
 
   for (int l = 4; l >= 1; l--) {
     u16 index;
 
     // If identity page mapping is not enabled, we must use va.
-    if (!identity_mapping_on) ptp = (ptp_t *)P2V(ptp);
+    if (!identity_mapping_on)
+      ptp = (ptp_t*)P2V(ptp);
 
     switch (l) {
-    case 1: index = GET_L1_INDEX(va); break;
-    case 2: index = GET_L2_INDEX(va); break;
-    case 3: index = GET_L3_INDEX(va); break;
-    case 4: index = GET_L4_INDEX(va); break;
-    default: BUG("[__walkpgtbl] invalid level");
+      case 1:
+        index = GET_L1_INDEX(va);
+        break;
+      case 2:
+        index = GET_L2_INDEX(va);
+        break;
+      case 3:
+        index = GET_L3_INDEX(va);
+        break;
+      case 4:
+        index = GET_L4_INDEX(va);
+        break;
+      default:
+        BUG("[__walkpgtbl] invalid level");
     }
 
     if (l == 1) {
@@ -74,12 +84,12 @@ void map_one_page(ptp_t *pgtbl, vaddr_t va, paddr_t pa, u32 flag,
         ptp->ent[index].pde.nxt_addr = GET_PTE_ADDR(tmp);
       }
 
-      ptp = (ptp_t *)((u64)(ptp->ent[index].pde.nxt_addr) << PAGE_SHIFT);
+      ptp = (ptp_t*)((u64)(ptp->ent[index].pde.nxt_addr) << PAGE_SHIFT);
     }
   }
 }
 
-int set_kmapping(ptp_t *pgtbl, bool identity_mapping_on) {
+int set_kmapping(ptp_t* pgtbl, bool identity_mapping_on) {
   int pgcnt = 0;
   for (int i = 0; i < ARRSIZE(kernel_mapping); ++i) {
     paddr_t curp = ROUND_DOWN(kernel_mapping[i].p_beg, PAGE_SIZE);
@@ -97,7 +107,7 @@ int set_kmapping(ptp_t *pgtbl, bool identity_mapping_on) {
 void init_kpgtbl() {
   int pgcnt;
 
-  kpgtbl = (ptp_t *)kzalloc(PAGE_SIZE);
+  kpgtbl = (ptp_t*)kzalloc(PAGE_SIZE);
   pgcnt = set_kmapping(kpgtbl, true);
 
   kdebug("[init_kpgtbl] %d pages is mapped\n", pgcnt);

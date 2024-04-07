@@ -5,19 +5,20 @@
 #include "mm/mmu.h"
 #include "proc/process.h"
 
-extern struct process *proc_tbl[NPROC];
-extern ptp_t *kpgtbl;
+extern struct process* proc_tbl[NPROC];
+extern ptp_t* kpgtbl;
 
-void context_switch(struct context **current, struct context *target);
+void context_switch(struct context** current, struct context* target);
 
 void scheduler() {
-  struct cpu *cpu = get_cur_cpu();
-  struct process *proc;
+  struct cpu* cpu = get_cur_cpu();
+  struct process* proc;
 
   while (true) {
     for (int i = 0; i < NPROC; i++) {
       proc = proc_tbl[i];
-      if (proc == NULL || proc->status != PROC_READY) continue;
+      if (proc == NULL || proc->status != PROC_READY)
+        continue;
 
       proc->status = PROC_RUNNING;
       cpu->cur_proc = proc;
@@ -32,4 +33,6 @@ void scheduler() {
   }
 }
 
-void enter_schedule() { context_switch(&get_cur_proc()->ctx, cpu->sched_ctx); }
+void enter_schedule() {
+  context_switch(&get_cur_proc()->ctx, cpu->sched_ctx);
+}

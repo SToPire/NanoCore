@@ -16,14 +16,14 @@ void print_welcome() {
 }
 
 int main() {
-  cpu_init();      // init gdt & tss
-  uart_init();     // init uart device
-  print_welcome(); // show welcome message
-  mm_init();       // init memory management module
-  intr_init();     // enable interrupt
-  tarfs_init();    // use tarfs as disk file system
-  uproc_init();    // init first user process
-  scheduler();     // enter scheduler loop
+  cpu_init();       // init gdt & tss
+  uart_init();      // init uart device
+  print_welcome();  // show welcome message
+  mm_init();        // init memory management module
+  intr_init();      // enable interrupt
+  tarfs_init();     // use tarfs as disk file system
+  uproc_init();     // init first user process
+  scheduler();      // enter scheduler loop
 
   kdebug("spinning!\n");
   while (1)

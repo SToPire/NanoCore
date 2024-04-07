@@ -34,7 +34,7 @@ struct mem_pool {
   size_t size;
 
   // slab allocator
-  struct slab_header *slabs[SLAB_MAX_ORDER - SLAB_MIN_ORDER + 1];
+  struct slab_header* slabs[SLAB_MAX_ORDER - SLAB_MIN_ORDER + 1];
 
   // dummy allocator, list of free 4KB pages in PHASE1_PHYMEM area, see layout.h
   paddr_t phase1_page_list;

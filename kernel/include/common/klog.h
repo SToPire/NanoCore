@@ -20,8 +20,8 @@
 #include "utils/string.h"
 
 #define WARNING 0
-#define INFO    1
-#define DEBUG   2
+#define INFO 1
+#define DEBUG 2
 
 /* LOG_LEVEL is INFO by default */
 

@@ -19,17 +19,17 @@ struct mem_pool global_mp;
 bool is_kpgtbl_set;
 
 void kfree(paddr_t addr) {
-  struct mem_pool *mp = &global_mp;
+  struct mem_pool* mp = &global_mp;
   // PHASE1_PHYMEM area
   if (addr < V2P(end) + PHASE1_PHYMEM_SIZE) {
-    struct page_hdr *h =
-        is_kpgtbl_set ? (struct page_hdr *)P2V(addr) : (struct page_hdr *)addr;
+    struct page_hdr* h =
+        is_kpgtbl_set ? (struct page_hdr*)P2V(addr) : (struct page_hdr*)addr;
     h->next = mp->phase1_page_list;
     mp->phase1_page_list = addr;
     return;
   }
 
-  if (virt_to_page(mp, (void *)P2V(addr))->slab) {
+  if (virt_to_page(mp, (void*)P2V(addr))->slab) {
     return slab_free(mp, addr);
   }
 
@@ -37,13 +37,13 @@ void kfree(paddr_t addr) {
 }
 
 paddr_t kalloc(size_t size) {
-  struct mem_pool *mp = &global_mp;
+  struct mem_pool* mp = &global_mp;
 
   if (size == PAGE_SIZE && mp->phase1_page_list) {
     paddr_t ret = mp->phase1_page_list;
     mp->phase1_page_list =
-        is_kpgtbl_set ? ((struct page_hdr *)P2V(mp->phase1_page_list))->next
-                      : ((struct page_hdr *)mp->phase1_page_list)->next;
+        is_kpgtbl_set ? ((struct page_hdr*)P2V(mp->phase1_page_list))->next
+                      : ((struct page_hdr*)mp->phase1_page_list)->next;
     return ret;
   }
 
@@ -61,11 +61,11 @@ paddr_t kzalloc(size_t size) {
     ABORT();
   }
 
-  memset((void *)P2V(ret), 0, size);
+  memset((void*)P2V(ret), 0, size);
   return ret;
 }
 
-void init_mempool(struct mem_pool *mp) {
+void init_mempool(struct mem_pool* mp) {
   // init mem_pool
   for (int i = 0; i < BUDDY_MAX_ORDER; i++) {
     mp->freelists[i].nr_free = 0;
@@ -78,7 +78,7 @@ void init_mempool(struct mem_pool *mp) {
  *  It's mainly used for setting up kernel page table
  *  when buddy allocator is not available.
  */
-void init_phase1_phymem(struct mem_pool *mp) {
+void init_phase1_phymem(struct mem_pool* mp) {
   paddr_t page;
   /* 4MB (1024 pages) is reserved for kernel page table*/
   for (page = V2P(end); page < V2P(end) + PHASE1_PHYMEM_SIZE;
