@@ -3,6 +3,7 @@
 #include "common/macro.h"
 #include "common/type.h"
 #include "common/x86.h"
+#include "mm/layout.h"
 #include "mm/mm.h"
 #include "mm/mmu.h"
 #include "proc/process.h"
@@ -11,7 +12,18 @@ void init_mm_struct(struct mm_struct* mm) {
   init_list_head(&mm->mmap_list);
 }
 
-void add_vma(struct mm_struct* mm, vaddr_t start, vaddr_t end, u64 flags) {
+void _set_vma(struct vm_area_struct* vma, vaddr_t start, vaddr_t end, u64 flags,
+              struct file* file, u64 file_offset, u64 file_size) {
+  vma->start = start;
+  vma->end = end;
+  vma->flags = flags;
+  vma->file = file;
+  vma->file_offset = file_offset;
+  vma->file_size = file_size;
+}
+
+void add_vma(struct mm_struct* mm, vaddr_t start, vaddr_t end, u64 flags,
+             struct file* file, u64 file_offset, u64 file_size) {
   struct vm_area_struct *vma, *n;
   struct list_head* prev = &mm->mmap_list;
 
@@ -25,6 +37,7 @@ void add_vma(struct mm_struct* mm, vaddr_t start, vaddr_t end, u64 flags) {
 
     if (start <= vma->start && end >= vma->end) {
       // new area covers the old one
+      // TODO: release resources (e.g. file) related to the old vma
       list_del(&vma->list);
       kfree(V2P(vma));
       continue;
@@ -32,19 +45,27 @@ void add_vma(struct mm_struct* mm, vaddr_t start, vaddr_t end, u64 flags) {
 
     if (start > vma->start && end < vma->end) {
       // new area is inside the old one
-      struct vm_area_struct* mid_vma =
-          (struct vm_area_struct*)P2V(kalloc(sizeof(struct vm_area_struct)));
-      struct vm_area_struct* end_vma =
-          (struct vm_area_struct*)P2V(kalloc(sizeof(struct vm_area_struct)));
+      struct vm_area_struct* mid_vma;
+      struct vm_area_struct* end_vma;
 
-      mid_vma->start = start;
-      mid_vma->end = end;
-      mid_vma->flags = flags;
+      mid_vma =
+          (struct vm_area_struct*)P2V(kalloc(sizeof(struct vm_area_struct)));
+      if (!mid_vma) {
+        kerror("add_vma: failed to allocate mid_vma\n");
+        BUG_ON(true);
+      }
+      _set_vma(mid_vma, start, end, flags, file, file_offset, file_size);
       list_add(&vma->list, &mid_vma->list);
 
-      end_vma->start = end;
-      end_vma->end = vma->end;
-      end_vma->flags = vma->flags;
+      end_vma =
+          (struct vm_area_struct*)P2V(kalloc(sizeof(struct vm_area_struct)));
+      if (!end_vma) {
+        kerror("add_vma: failed to allocate end_vma\n");
+        kfree(V2P(mid_vma));
+        BUG_ON(true);
+      }
+      _set_vma(end_vma, end, vma->end, vma->flags, vma->file, vma->file_offset,
+               vma->file_size);
       list_add(&mid_vma->list, &end_vma->list);
 
       vma->end = start;
@@ -63,15 +84,19 @@ void add_vma(struct mm_struct* mm, vaddr_t start, vaddr_t end, u64 flags) {
 
   // contiguous with the previous one
   vma = container_of(prev, struct vm_area_struct, list);
-  if (vma->end == start && vma->flags == flags) {
+  if (vma->end == start && vma->flags == flags && vma->file == file &&
+      vma->file_offset + vma->file_size == file_offset) {
     vma->end = end;
+    vma->file_size += file_size;
     return;
   }
 
   vma = (struct vm_area_struct*)P2V(kalloc(sizeof(struct vm_area_struct)));
-  vma->start = start;
-  vma->end = end;
-  vma->flags = flags;
+  if (!vma) {
+    kerror("add_vma: failed to allocate vma\n");
+    BUG_ON(true);
+  }
+  _set_vma(vma, start, end, flags, file, file_offset, file_size);
   list_add(prev, &vma->list);
 }
 
@@ -113,6 +138,7 @@ void pagefault_handler(struct trap_frame* tf) {
   }
 
   va = rcr2();
+  va = ROUND_DOWN(va, PAGE_SIZE);
   err = (struct pf_error*)&tf->errno;
 
   vma = find_vma(&proc->mm, va);
@@ -139,6 +165,14 @@ void pagefault_handler(struct trap_frame* tf) {
     }
 
     pa = kzalloc(PAGE_SIZE);
+
+    if (vma->file) {
+      u64 file_offset = vma->file_offset + (va - vma->start);
+      u64 file_size = MIN(vma->file_size - (va - vma->start), PAGE_SIZE);
+      BUG_ON(vfs_lseek(vma->file, file_offset, SEEK_SET) < 0);
+      BUG_ON(vfs_read(vma->file, (void*)P2V(pa), file_size) != file_size);
+    }
+
     flags = vma_flags_to_pte_flags(vma->flags);
 
     map_one_page(proc->pgtbl, va, pa, flags, false);

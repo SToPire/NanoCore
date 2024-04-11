@@ -32,8 +32,8 @@ static struct kernel_mapping {
     {P2V(0xF0000000), 0xF0000000, 0x100000000, PTE_WRITE | PTE_NONEXEC},
 };
 
-void map_one_page(ptp_t* pgtbl, vaddr_t va, paddr_t pa, u32 flag,
-                  bool identity_mapping_on) {
+void _traverse_pt(ptp_t* pgtbl, bool set_valid, vaddr_t va, paddr_t pa,
+                  u32 flag, bool identity_mapping_on) {
   ptp_t* ptp = pgtbl;
 
   for (int l = 4; l >= 1; l--) {
@@ -61,32 +61,52 @@ void map_one_page(ptp_t* pgtbl, vaddr_t va, paddr_t pa, u32 flag,
     }
 
     if (l == 1) {
-      ptp->ent[index].pte.is_valid = 1;
-      ptp->ent[index].pte.is_user = flag & PTE_USER ? 1 : 0;
-      ptp->ent[index].pte.is_writeable = flag & PTE_WRITE ? 1 : 0;
-      ptp->ent[index].pte.non_execute = flag & PTE_NONEXEC ? 1 : 0;
-
-      ptp->ent[index].pte.paddr = GET_PTE_ADDR(pa);
+      if (set_valid) {
+        ptp->ent[index].pte.is_valid = 1;
+        ptp->ent[index].pte.is_user = flag & PTE_USER ? 1 : 0;
+        ptp->ent[index].pte.is_writeable = flag & PTE_WRITE ? 1 : 0;
+        ptp->ent[index].pte.non_execute = flag & PTE_NONEXEC ? 1 : 0;
+        ptp->ent[index].pte.paddr = GET_PTE_ADDR(pa);
+      } else {
+        ptp->ent[index].pte.is_valid = 0;
+        ptp->ent[index].pte.is_user = 0;
+        ptp->ent[index].pte.is_writeable = 0;
+        ptp->ent[index].pte.non_execute = 0;
+        ptp->ent[index].pte.paddr = 0;
+      }
     } else {
       if (!ptp->ent[index].pde.is_valid) {
-        ptp->ent[index].pde.is_valid = 1;
-        /* According to Section 4.6.1, if the U/S flag (bit 2) is 0 in at least
+        if (set_valid) {
+          ptp->ent[index].pde.is_valid = 1;
+          /* According to Section 4.6.1, if the U/S flag (bit 2) is 0 in at least
            one of the paging-structure entries, the address is a supervisor-mode
            address. As a result, we must assign 1 as the default value for
            'is_user' field in page table structure in order to map user pages.
            */
-        ptp->ent[index].pde.is_user = 1;
-        ptp->ent[index].pde.is_writeable = 1;
-        ptp->ent[index].pde.non_execute = 0;
+          ptp->ent[index].pde.is_user = 1;
+          ptp->ent[index].pde.is_writeable = 1;
+          ptp->ent[index].pde.non_execute = 0;
 
-        paddr_t tmp = kzalloc(PAGE_SIZE);
+          paddr_t tmp = kzalloc(PAGE_SIZE);
 
-        ptp->ent[index].pde.nxt_addr = GET_PTE_ADDR(tmp);
+          ptp->ent[index].pde.nxt_addr = GET_PTE_ADDR(tmp);
+        } else {
+          return;
+        }
       }
 
       ptp = (ptp_t*)((u64)(ptp->ent[index].pde.nxt_addr) << PAGE_SHIFT);
     }
   }
+}
+
+void map_one_page(ptp_t* pgtbl, vaddr_t va, paddr_t pa, u32 flag,
+                  bool identity_mapping_on) {
+  _traverse_pt(pgtbl, true, va, pa, flag, identity_mapping_on);
+}
+
+void unmap_one_page(ptp_t* pgtbl, vaddr_t va) {
+  _traverse_pt(pgtbl, false, va, 0, 0, false);
 }
 
 int set_kmapping(ptp_t* pgtbl, bool identity_mapping_on) {

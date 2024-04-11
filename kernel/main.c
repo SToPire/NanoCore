@@ -1,7 +1,7 @@
 #include "common/cpu.h"
 #include "common/klog.h"
 #include "dev/uart.h"
-#include "fs/tarfs.h"
+#include "fs/vfs.h"
 #include "interrupt/interrupt.h"
 #include "mm/mm.h"
 #include "proc/process.h"
@@ -21,7 +21,7 @@ int main() {
   print_welcome();  // show welcome message
   mm_init();        // init memory management module
   intr_init();      // enable interrupt
-  tarfs_init();     // use tarfs as disk file system
+  fs_init();        // init disk file system
   uproc_init();     // init first user process
   scheduler();      // enter scheduler loop
 

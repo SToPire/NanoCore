@@ -24,7 +24,16 @@ struct tar_header {
   u8 padding[12];
 };
 
+struct tarfs_super_block {
+  struct super_block* sb;
+  vaddr_t tarfs_base;
+  u64 tarfs_len;
+};
+
+struct tarfs_inode {
+  u64 offset;
+};
+
 #define TARFS_SECTCNT (16)
 
-void tarfs_init();
-int tarfs_read(const char* path, size_t off, int len, void* buf);
+struct super_block* tarfs_mount();

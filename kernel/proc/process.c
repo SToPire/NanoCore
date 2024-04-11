@@ -6,7 +6,7 @@
 #include "common/macro.h"
 #include "common/type.h"
 #include "common/x86.h"
-#include "fs/tarfs.h"
+#include "fs/vfs.h"
 #include "mm/layout.h"
 #include "mm/mm.h"
 #include "mm/mmu.h"
@@ -68,9 +68,9 @@ void uproc_init() {
                false);
 
   add_vma(&proc->mm, USER_CODE_START, USER_CODE_START + PAGE_SIZE,
-          VM_READ | VM_WRITE | VM_EXEC | VM_USER);
+          VM_READ | VM_WRITE | VM_EXEC | VM_USER, NULL, 0, 0);
   add_vma(&proc->mm, USER_STACK_START, USER_STACK_END,
-          VM_READ | VM_WRITE | VM_USER);
+          VM_READ | VM_WRITE | VM_USER, NULL, 0, 0);
 
   for (int i = 0; i < sizeof(init_code); i++)
     *(u8*)P2V(upage + i) = init_code[i];
@@ -123,20 +123,26 @@ void exec(const char* path) {
   struct elf_program_header* phdr;
   struct vm_area_struct* vma;
   struct process* proc = get_cur_proc();
+  struct file* file;
   vaddr_t va;
-  paddr_t pa;
+  // paddr_t pa;
   vaddr_t buf = P2V(kalloc(4 * PAGE_SIZE));
 
-  ret = tarfs_read(path, 0, sizeof(struct elf_header), (void*)buf);
-  BUG_ON(ret < 0);
+  file = vfs_open(path, O_RDONLY);
+  BUG_ON(file == NULL);
+
+  ret = vfs_read(file, (void*)buf, sizeof(struct elf_header));
+  BUG_ON(ret != sizeof(struct elf_header));
 
   elf_hdr = (struct elf_header*)buf;
   phdr = (struct elf_program_header*)(buf + sizeof(struct elf_header));
 
   for (u16 i = 0; i < elf_hdr->e_phnum; ++i) {
-    ret = tarfs_read(path, elf_hdr->e_phoff + i * elf_hdr->e_phentsize,
-                     elf_hdr->e_phentsize, phdr);
-    BUG_ON(ret < 0);
+    BUG_ON(vfs_lseek(file, elf_hdr->e_phoff + i * elf_hdr->e_phentsize,
+                     SEEK_SET) < 0);
+
+    ret = vfs_read(file, phdr, elf_hdr->e_phentsize);
+    BUG_ON(ret != elf_hdr->e_phentsize);
 
     if (phdr->p_type != PT_LOAD)
       continue;
@@ -147,20 +153,14 @@ void exec(const char* path) {
         phdr->p_vaddr, phdr->p_memsz, phdr->p_filesz, phdr->p_flags);
 
     // TODO: free first user page here ?
-    // TODO: Use CoW
-    pa = kzalloc(ROUND_UP(phdr->p_memsz, PAGE_SIZE));
-    ret = tarfs_read(path, phdr->p_offset, phdr->p_filesz, (void*)P2V(pa));
-    BUG_ON(ret < 0);
-    memset((void*)P2V(pa) + phdr->p_filesz, 0, phdr->p_memsz - phdr->p_filesz);
-
     for (va = ROUND_DOWN(phdr->p_vaddr, PAGE_SIZE);
-         va < phdr->p_vaddr + phdr->p_memsz; va += PAGE_SIZE, pa += PAGE_SIZE) {
-      map_one_page(proc->pgtbl, va, pa, PTE_USER | elf_flag2perm(phdr->p_flags),
-                   false);
+         va < phdr->p_vaddr + phdr->p_memsz; va += PAGE_SIZE) {
+      unmap_one_page(proc->pgtbl, va);
     }
     add_vma(&proc->mm, ROUND_DOWN(phdr->p_vaddr, PAGE_SIZE),
             ROUND_UP(phdr->p_vaddr + phdr->p_memsz, PAGE_SIZE),
-            VM_USER | elf_flag2vm(phdr->p_flags));
+            VM_USER | elf_flag2vm(phdr->p_flags), file, phdr->p_offset,
+            phdr->p_filesz);
   }
 
   for_each_in_list(vma, struct vm_area_struct, list, &proc->mm.mmap_list) {

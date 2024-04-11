@@ -2,6 +2,7 @@
 
 #include "common/cpu.h"
 #include "common/type.h"
+#include "fs/vfs.h"
 #include "utils/list.h"
 
 #define VM_READ 0x1
@@ -14,6 +15,10 @@ struct vm_area_struct {
   u64 end;
 
   u64 flags;
+
+  struct file* file;
+  u64 file_offset;
+  u64 file_size;
 
   struct list_head list;
 };
@@ -43,6 +48,7 @@ struct pf_error {
 };
 
 void init_mm_struct(struct mm_struct* mm);
-void add_vma(struct mm_struct* mm, vaddr_t start, vaddr_t end, u64 flags);
+void add_vma(struct mm_struct* mm, vaddr_t start, vaddr_t end, u64 flags,
+             struct file* file, u64 file_offset, u64 file_size);
 
 void pagefault_handler(struct trap_frame* tf);

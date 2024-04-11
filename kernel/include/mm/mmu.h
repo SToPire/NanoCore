@@ -48,5 +48,6 @@ typedef struct {
 // pgtbl must be a physical address
 void map_one_page(ptp_t* pgtbl, vaddr_t va, paddr_t pa, u32 flag,
                   bool identity_mapping_on);
+void unmap_one_page(ptp_t* pgtbl, vaddr_t va);
 int set_kmapping(ptp_t* pgtbl, bool identity_mapping_on);
 void init_kpgtbl();
