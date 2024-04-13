@@ -25,8 +25,8 @@ void switch_to_uproc(struct process* proc) {
 }
 
 u8 init_code[] = {
-    0xBF, 0x01, 0x00, 0x00, 0x00,  // mov rdi, 0x1
-    0xBE, 0x0C, 0x00, 0x10, 0x00,  // mov rsi, %str
+    0xB8, 0x01, 0x00, 0x00, 0x00,  // mov rax, 0x1
+    0xBF, 0x0C, 0x00, 0x10, 0x00,  // mov rdi, %str
     0xCD, 0x80,                    // int 0x80
     0x2F, 0x69, 0x6E, 0x69, 0x74,  // str: "/init"
 };
@@ -57,6 +57,8 @@ void uproc_init() {
   // TODO: give a separate user stack
   proc->tf->rsp = USER_STACK_END;
   proc->tf->eflags = EFLAG_IF;
+
+  proc->ofiles.of_count = 3;
 
   // set upgtbl
   proc->pgtbl = (ptp_t*)kzalloc(PAGE_SIZE);

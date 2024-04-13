@@ -13,6 +13,9 @@ tarfs: $(UPROG)
 # align tarfs.img to 16 sectors
 	dd if=/dev/null of=$(BUILDDIR)/user/tarfs.img bs=512 seek=16
 
-u_%: %.c
+userlib: $(UDIR)/usyscall.S
+	nasm $(ASFLAGS) $(UDIR)/usyscall.S -o $(BUILDDIR)/user/userlib.o
+
+u_%: %.c userlib
 	gcc $(CFLAGS) $< -c -o $(BUILDDIR)/user/$@.o
-	ld $(LDFLAGS) -T $(UDIR)/user.ld -e main $(BUILDDIR)/user/$@.o -o $(BUILDDIR)/user/bin/$@
+	ld $(LDFLAGS) -T $(UDIR)/user.ld -e main $(BUILDDIR)/user/$@.o $(BUILDDIR)/user/userlib.o -o $(BUILDDIR)/user/bin/$@

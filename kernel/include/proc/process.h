@@ -16,11 +16,19 @@ enum proc_stat {
   PROC_SLEEPING,
 };
 
+#define NOFILE 16
+
+struct open_file {
+  struct file* ofs[NOFILE];
+  int of_count;
+};
+
 struct process {
   enum proc_stat status;
   struct process* parent;
   struct trap_frame* tf;
   struct mm_struct mm;
+  struct open_file ofiles;
   struct context* ctx;
   ptp_t* pgtbl;
   u16 pid;
