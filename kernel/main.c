@@ -12,7 +12,7 @@ int errno;
 
 void print_welcome() {
   printk("\n");
-  kinfo("sos booting...\n");
+  kinfo("NanoCore booting...\n");
 }
 
 int main() {
