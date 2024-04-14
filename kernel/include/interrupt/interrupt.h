@@ -2,6 +2,9 @@
 
 #include "common/type.h"
 
+#define IRQ_DEV_BASE 0xC0
+#define IRQ_DEV_UART 0x4  // For historical reasons, UART(COM1) is IRQ 4,
+
 #define IRQ_PF 0xE
 #define IRQ_TIMER 0x40
 #define IRQ_SYSCALL 0x80
@@ -32,9 +35,13 @@ struct idt_gate_desc {
 };
 
 void lapic_init();
+void ioapic_init();
 void idt_init();
 
 void intr_init();
 
 // ack an interrupt
 void lapic_eoi();
+
+// enable an interrupt
+void ioapic_enable(u8 irq, int cpu);

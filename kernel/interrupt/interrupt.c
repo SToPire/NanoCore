@@ -1,6 +1,7 @@
 #include "interrupt/interrupt.h"
 #include "common/cpu.h"
 #include "common/klog.h"
+#include "dev/uart.h"
 #include "proc/process.h"
 #include "proc/vm.h"
 #include "syscall/syscall.h"
@@ -22,8 +23,12 @@ void exception_handler(struct trap_frame* tf) {
     case IRQ_PF:
       pagefault_handler(tf);
       break;
+    case IRQ_DEV_BASE + IRQ_DEV_UART:
+      uart_intr();
+      lapic_eoi();
+      break;
     default:
-      kerror("[exception handler] unknown irq type=%lu errno=%lu\n", tf->trapno,
+      kerror("[exception handler] unknown irq type=%lu errno=%lx\n", tf->trapno,
              tf->errno);
       while (1)
         ;
@@ -55,5 +60,8 @@ void idt_init() {
 
 void intr_init() {
   lapic_init();
+  ioapic_init();
   idt_init();
+
+  uart_enable_irq();
 }

@@ -213,7 +213,7 @@ vector 192
 vector 193
 vector 194
 vector 195
-vector 196
+no_hwerr_vector 196 ; UART COM1 will not push an error code
 vector 197
 vector 198
 vector 199

@@ -28,7 +28,7 @@ static struct kernel_mapping {
     // kernel data and physical memory
     {(vaddr_t)etext, V2P(etext), PHY_MAX_OFFSET, PTE_WRITE | PTE_NONEXEC},
 
-    // mapping 3.75-4 GB physical address to kernel for lapic MMIO
+    // mapping 3.75-4 GB physical address to kernel for {l, io}apic MMIO
     {P2V(0xF0000000), 0xF0000000, 0x100000000, PTE_WRITE | PTE_NONEXEC},
 };
 
