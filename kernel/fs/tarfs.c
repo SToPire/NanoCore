@@ -133,7 +133,10 @@ struct super_block* tarfs_mount() {
   // TODO: fix me
   tsb.tarfs_len = TARFS_SECTCNT * ATA_SECTOR_SIZE;
   tsb.tarfs_base = P2V(kalloc(tsb.tarfs_len));
-  ata_readsectn((void*)tsb.tarfs_base, false, 0, TARFS_SECTCNT);
+  for (int i = 0; i < TARFS_SECTCNT; i += 16) {
+    ata_readsectn((void*)((size_t)tsb.tarfs_base + i * ATA_SECTOR_SIZE), false,
+                  i, 16);
+  }
 
   sb->s_op = &tarfs_ops;
   sb->s_private = &tsb;

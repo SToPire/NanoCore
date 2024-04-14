@@ -34,6 +34,6 @@ struct tarfs_inode {
   u64 offset;
 };
 
-#define TARFS_SECTCNT (16)
+#define TARFS_SECTCNT (128)
 
 struct super_block* tarfs_mount();

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "common/klog.h"
 #include "common/type.h"
 #include "common/x86.h"
 
@@ -22,6 +23,12 @@
 #define ATA_SECTOR_SIZE 512
 
 static void ata_readsectn(void* addr, bool master, u32 sect, u8 cnt) {
+  // do not support cnt > 16
+  if (cnt > 16) {
+    kerror("ata_readsectn: cnt > 16\n");
+    return;
+  }
+
   while ((inb(ATA_STATUS) & 0xC0) != 0x40)
     ;
 
