@@ -58,7 +58,11 @@ struct slab_header* init_one_slab(struct mem_pool* mp, int order) {
 
   // each page in slab points to slab_hdr (used in slab_free())
   while (buddy_alloc_size) {
-    virt_to_page(mp, pages)->slab = slab_hdr;
+    struct page* page = virt_to_page(mp, pages);
+
+    page->slab = slab_hdr;
+    page->flag |= PAGE_FLAG_SLAB_ALLOC;
+
     pages += PAGE_SIZE;
     buddy_alloc_size -= PAGE_SIZE;
   }
@@ -106,6 +110,8 @@ void slab_free(struct mem_pool* mp, paddr_t addr) {
   struct slab_header* slab;
 
   page = virt_to_page(mp, (void*)P2V(addr));
+  BUG_ON(!(page->flag & PAGE_FLAG_SLAB_ALLOC));
+
   slab = page->slab;
 
   ((struct slot_list_node*)P2V(addr))->next = slab->slot_list_head;

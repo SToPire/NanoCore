@@ -20,6 +20,8 @@ bool is_kpgtbl_set;
 
 void kfree(paddr_t addr) {
   struct mem_pool* mp = &global_mp;
+  struct page* page;
+
   // PHASE1_PHYMEM area
   if (addr < V2P(end) + PHASE1_PHYMEM_SIZE) {
     struct page_hdr* h =
@@ -29,7 +31,8 @@ void kfree(paddr_t addr) {
     return;
   }
 
-  if (virt_to_page(mp, (void*)P2V(addr))->slab) {
+  page = virt_to_page(mp, (void*)P2V(addr));
+  if (page->flag & PAGE_FLAG_SLAB_ALLOC) {
     return slab_free(mp, addr);
   }
 
@@ -85,6 +88,17 @@ void init_phase1_phymem(struct mem_pool* mp) {
        page += PAGE_SIZE) {
     kfree(page);
   }
+}
+
+/* convert between "struct page*" and page pointer*/
+void* page_to_virt(struct mem_pool* mp, struct page* page) {
+  u64 pgnum = page - (struct page*)mp->page_meta_start;
+  return (void*)mp->page_area_start + pgnum * PAGE_SIZE;
+}
+
+struct page* virt_to_page(struct mem_pool* mp, void* addr) {
+  u64 pgnum = ((vaddr_t)addr - mp->page_area_start) / PAGE_SIZE;
+  return (struct page*)mp->page_meta_start + pgnum;
 }
 
 void mm_init() {

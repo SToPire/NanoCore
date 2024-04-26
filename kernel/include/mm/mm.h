@@ -40,6 +40,28 @@ struct mem_pool {
   paddr_t phase1_page_list;
 };
 
+#define PAGE_FLAG_BUDDY_ALLOCED (1 << 0)
+#define PAGE_FLAG_SLAB_ALLOC (1 << 1)
+
+struct page {
+  // 64 ~ 57: folio's order in buddy allocator
+  u64 flag;
+
+  union {
+    struct slab_header* slab;  // page used in slab allocator
+  };
+
+  struct list_head node;
+} __attribute__((aligned(8)));
+
+#define SET_PAGE_ORDER(page, order) \
+  ((page)->flag = ((page)->flag & 0x00FFFFFFFFFFFFFF) | ((u64)(order) << 56))
+
+#define GET_PAGE_ORDER(page) (((page)->flag >> 56) & 0xFF)
+
+void* page_to_virt(struct mem_pool* mp, struct page* page);
+struct page* virt_to_page(struct mem_pool* mp, void* addr);
+
 void kfree(paddr_t addr);
 paddr_t kalloc(size_t size);
 paddr_t kzalloc(size_t size);

@@ -6,6 +6,7 @@
 struct super_block* root_fs;
 
 struct file* vfs_open(const char* path, int flags) {
+  // TODO: re-open of the same file should have the same inode
   return root_fs->s_op->open(path, flags);
 }
 
